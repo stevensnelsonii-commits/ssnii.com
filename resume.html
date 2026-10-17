@@ -10,12 +10,19 @@
 <body>
 
 <nav>
-  <a class="brand" href="index.html#top"><img src="img/logo.png" alt="Swamp Shell logo">S. Nelson II</a>
-  <a href="index.html#work">Work</a>
-  <a href="index.html#games">Games</a>
-  <a href="index.html#about">About</a>
-  <a href="resume.html" class="active">Resume</a>
-  <a href="index.html#contact">Contact</a>
+  <a class="brand" href="index.html"><img src="img/logo-canon.png" alt="Swamp Shell Industries logo">Swamp Shell Industries</a>
+  <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links"><span></span><span></span><span></span></button>
+  <div class="nav-links" id="nav-links">
+    <a href="index.html">Home</a>
+    <a href="work.html">Work</a>
+    <a href="services.html">Services</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+  </div>
+  <div class="nav-social">
+    <a href="https://www.instagram.com/swampshell_industries" target="_blank" rel="noopener" aria-label="Swamp Shell Industries on Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/></svg></a>
+    <a href="https://www.linkedin.com/in/snelsondirects/" target="_blank" rel="noopener" aria-label="Steve Nelson II on LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.24 8.31h4.52V23H.24V8.31zM8.34 8.31h4.33v2h.06c.6-1.14 2.08-2.34 4.28-2.34C21.6 7.97 23 10.9 23 14.9V23h-4.5v-7.1c0-1.7-.03-3.88-2.37-3.88-2.37 0-2.73 1.85-2.73 3.76V23H8.34V8.31z"/></svg></a>
+  </div>
 </nav>
 
 <main class="resume">
@@ -92,5 +99,6 @@
   <p><a href="index.html">← Back to portfolio</a></p>
 </footer>
 
+<script src="js/nav.js" defer></script>
 </body>
 </html>

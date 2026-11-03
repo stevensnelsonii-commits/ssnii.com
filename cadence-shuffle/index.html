@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cadence — The Class Shuffle, Run Ten Times | Swamp Shell Industries</title>
-<meta name="description" content="Cadence, the class-scheduling program built for Warren County Summer Music School, runs its scheduler ten times on last year's anonymized practice data. Same answer every time.">
+<title>Cadence — Protected Page | Swamp Shell Industries</title>
+<meta name="description" content="A password-protected demonstration page from Swamp Shell Industries.">
 <style>
   :root{
     --bone:#f0e7d3;
@@ -44,38 +44,24 @@
     font-size:clamp(1.9rem,5vw,2.7rem);font-weight:800;line-height:1.15;
     letter-spacing:-.01em;margin-bottom:.6rem;
   }
-  h1 em{font-style:normal;color:var(--brick)}
   .lede{font-size:1.12rem;color:var(--muted);max-width:38rem;margin-bottom:2rem}
-  video{
-    width:100%;height:auto;display:block;
-    background:#000;border:1px solid var(--line);
-    margin-bottom:.5rem;
+  form{display:flex;flex-wrap:wrap;gap:.7rem;margin-bottom:1rem;max-width:38rem}
+  input[type="password"]{
+    flex:1;min-width:14rem;
+    font-size:1.05rem;padding:.8rem 1rem;
+    background:#fffdf6;color:var(--ink);
+    border:2px solid var(--brick-dark);
   }
-  .vcap{font-size:.9rem;color:var(--muted);margin-bottom:2.5rem}
-  h2{
-    font-size:1.35rem;font-weight:800;margin:2.4rem 0 .7rem;
-    padding-top:1.4rem;border-top:2px solid var(--brick);
-  }
-  h3{font-size:1.08rem;font-weight:800;margin:1.5rem 0 .5rem;color:var(--brick-dark)}
-  p{margin-bottom:1rem;max-width:42rem}
-  ul{margin:0 0 1rem 1.3rem;max-width:42rem}
-  li{margin-bottom:.45rem}
-  .stats{
-    display:flex;flex-wrap:wrap;gap:1rem;margin:1.4rem 0 .4rem;
-  }
-  .stat{
-    background:var(--bone2);border:1px solid var(--line);
-    padding:.9rem 1.1rem;min-width:9.5rem;flex:1;
-  }
-  .stat b{display:block;font-size:1.7rem;line-height:1.1;color:var(--brick-dark)}
-  .stat span{font-size:.85rem;color:var(--muted)}
-  .demo{
-    display:inline-block;margin-top:.6rem;
+  button{
     background:var(--brick-dark);color:var(--bone);
-    font-weight:700;text-decoration:none;
-    padding:.85rem 1.5rem;border-bottom:4px solid var(--brick);
+    font-weight:700;font-size:1rem;
+    padding:.8rem 1.5rem;border:none;border-bottom:4px solid var(--brick);
+    cursor:pointer;
   }
-  .demo:hover{background:var(--brick)}
+  button:hover{background:var(--brick)}
+  button:disabled{opacity:.55;cursor:wait}
+  .err{color:var(--brick-dark);font-weight:700;margin-bottom:1rem}
+  .busy{color:var(--muted);margin-bottom:1rem}
   footer{
     margin-top:3.5rem;padding-top:1.2rem;border-top:1px solid var(--line);
     font-size:.88rem;color:var(--muted);
@@ -87,88 +73,58 @@
 
   <p class="brand">Swamp Shell Industries <span>— Cadence</span></p>
 
-  <div class="wip"><b>Work in progress:</b> this page shows a prototype demonstration. Cadence is still in development — what you're watching is the working system doing the real job on practice data, not the finished production version.</div>
+  <div class="wip"><b>Protected:</b> this page is passphrase-protected while Cadence is in prototype.</div>
 
-  <h1>The class shuffle, <em>run ten times.</em></h1>
-  <p class="lede">Cadence is the scheduling program we're building for Warren County Summer Music School. This video runs the scheduler ten times in a row on last year's practice data — and gets the same answer every time.</p>
+  <h1>Enter the passphrase</h1>
+  <p class="lede">Use the temporary passphrase from Steve's email. The same passphrase also opens the gated Cadence build linked from this page — one passphrase opens everything.</p>
 
-  <video controls preload="metadata" src="cadence-shuffle-sim-10-runs.mp4"></video>
-  <p class="vcap">The Cadence scheduler running ten times on the anonymized practice data: 99 students, 35 classes, 693 requests.</p>
-
-  <h2>How the shuffle works</h2>
-  <p>Applications are processed first come, first served, in the order they came in. Each student's choices are tried in the order they ranked them. If a first choice is full, or it clashes with something already on that student's schedule, Cadence writes down why and moves on to the next choice automatically.</p>
-  <p>Anyone it genuinely can't place lands on a short list with the reason, and the open classes that would actually fit them. Nothing ever fails silently.</p>
-
-  <h2>What happened in the video</h2>
-  <p>Ten runs, one identical result. The data is last year's run-through, anonymized — real numbers, made-up names. Every name you see on screen is a practice name; no real student information has ever been in this system.</p>
-  <div class="stats">
-    <div class="stat"><b>436</b><span>class assignments made, every run</span></div>
-    <div class="stat"><b>97 of 99</b><span>students got their first-choice A-period class</span></div>
-    <div class="stat"><b>0</b><span>double-bookings, overfilled classes, or teacher/room clashes</span></div>
-    <div class="stat"><b>10 / 10</b><span>runs identical</span></div>
-  </div>
-
-  <h2>The honest part</h2>
-  <p>46 of the 99 students end up one class short — and that's not the engine failing. 20 of the 35 classes were asked for more times than they have seats: Music Video alone had 57 asks for 16 seats. When demand runs past the chairs, somebody lands a class short no matter who does the scheduling. What Cadence does is show its work: each of those students is listed with the reason, and the open classes that fit them, so the list can be worked through by hand.</p>
-
-  <h2>Try it yourself</h2>
-  <p>The prototype is live. Sign-in is pre-filled — just click Sign In, then try the import workspace, Run Scheduler, and the Unresolved Queue.</p>
-  <p><a class="demo" href="https://stevensnelsonii-commits.github.io/swampshell-prime/cadence/">Open the Cadence prototype</a></p>
-
-  <h3>The gated production candidate — login + encryption</h3>
-  <p>We've also posted the gated candidate build — the production release candidate described in the note for Jen below. It opens behind an interim entry gate and carries the encryption layer; it holds practice data only, and real per-user accounts come with the data-home decision in production. The temporary passphrase for it is in Steve's email to the team — it is not published here.</p>
-  <p><a class="demo" href="https://swampshellindustriesllc.com/cadence-rc1/">Open the gated production candidate</a></p>
-
-  <h2>For Jen — how the student data is protected</h2>
-  <p><i>This section describes the production release candidate — the RC1 build with its encryption layer, prepared on our release branch. It is not the live public demo linked above; that demo still runs without these protections, which is exactly why real student data has never been loaded into it. The note is written for the district IT review, limits included.</i></p>
-  <p><b>In one sentence:</b> student records that Cadence saves on a device, and student-data files that travel between people, are now encrypted with a passphrase — they are no longer sitting in the browser as readable text.</p>
-
-  <h3>What is encrypted</h3>
-  <ul>
-    <li><b>Saved scenarios on the device.</b> A saved scenario contains the complete student list (names, grades, guardians, contacts, medical notes) plus every class request. These were previously stored in the browser's local storage as plain, readable text. They are now stored only as ciphertext.</li>
-    <li><b>The override audit trail</b> — the log of manual placement changes, which names students — is encrypted the same way.</li>
-    <li><b>Files that leave the machine.</b> A scenario file exported from Cadence is produced <i>only</i> in encrypted form, under a passphrase the sender sets for that file. A data file (for example a Rediker export) can likewise be sealed into an encrypted file before it goes into a shared folder or an email, and Cadence's Upload buttons recognize the sealed file and ask for its passphrase instead of failing.</li>
-  </ul>
-  <p>Working data typed into the scheduler during a live session is not encrypted while it is on screen — the program has to show it to the person using it. The encryption covers what is <i>saved</i> and what is <i>sent</i>.</p>
-
-  <h3>How it works</h3>
-  <ul>
-    <li><b>Cipher:</b> AES-256-GCM — the standard authenticated encryption built into every modern browser (WebCrypto); no third-party cryptography code was added, and Cadence still makes no network calls.</li>
-    <li><b>Key derivation:</b> the encryption key is derived from a passphrase with PBKDF2-HMAC-SHA-256 at 600,000 iterations (the current OWASP recommendation for this method), with a random salt per device — guessing passphrases is deliberately expensive.</li>
-    <li><b>Integrity:</b> GCM authentication means a wrong passphrase and a tampered-with file fail identically and are refused; there is no partial or silent decryption.</li>
-    <li><b>Key handling:</b> the derived key exists only in the tab's memory. It is never written to disk, never logged, and never put in a file. Locking the data (one click in the Scheduler) or closing/reloading the page destroys it. Exported files carry only the salt and iteration count needed to re-derive the key — never the key or the passphrase.</li>
-    <li><b>Passphrase:</b> in the gated build, the entry password the team already uses doubles as the data passphrase — one password to sign in and unlock the data. Scenario files use a separate passphrase chosen per export, so a file can be shared without sharing the device password.</li>
-  </ul>
-
-  <h3>What this protects against</h3>
-  <ul>
-    <li><b>Shared school computers.</b> Another person opening the same browser later cannot read saved student records out of the browser's storage — without the passphrase, the storage holds ciphertext. (This was the audit's main finding, and it is fixed.)</li>
-    <li><b>Casual access to a device or its files.</b> The browser profile folder no longer contains a readable student list.</li>
-    <li><b>Files in transit.</b> A scenario file or student-data export that lands in the wrong inbox or the wrong shared folder is ciphertext. It opens only with its passphrase, which should travel separately (a phone call, not the same email thread).</li>
-    <li><b>Quiet alteration.</b> A modified encrypted file fails its integrity check on open and is refused, rather than importing altered records.</li>
-  </ul>
-
-  <h3>The honest limits</h3>
-  <ul>
-    <li><b>A passphrase is not an account system.</b> Anyone who knows the passphrase and can open the app can read the data — that is what a passphrase means. There are no per-user identities, no per-user permissions, and no record of <i>who</i> unlocked the data. Real accounts remain the production step, and the decision about where student records live in production (district-hosted, managed service, or an agreed local procedure) is still WCSMS's to make. This layer hardens the interim local model; it does not replace that decision.</li>
-    <li><b>Out of scope, plainly:</b> a determined attacker who has both the passphrase and the machine; malware already running on the computer; someone watching the screen during an unlocked session. Client-side encryption on a single shared passphrase does not defend against those, and this note does not claim it does.</li>
-    <li><b>No recovery.</b> If the data passphrase for a device is forgotten, the encrypted saves on that device are unreadable — by design; there is no back door and no reset. Exported scenario files (with their own passphrases) are the practical backup.</li>
-    <li><b>Still one device, still no backup.</b> The data home is unchanged: this browser, this machine. If the browser profile is deleted or "cleaned," the encrypted saves go with it. Encryption protects confidentiality, not durability.</li>
-    <li><b>Printed and exported working documents are unchanged.</b> Rosters, contact lists, and medical lists are still produced as readable documents and printouts, because staff need them on paper. How those are handled is a school procedure question, not something this layer governs.</li>
-    <li><b>Old saves migrate forward.</b> Scenario saves made before this change are plaintext on disk until the next time they are opened and re-saved with the data unlocked, at which point they are rewritten encrypted automatically. On a machine that has run the older build, treat the old plaintext as present until that migration has happened once.</li>
-  </ul>
-
-  <h3>What a reviewer can check</h3>
-  <ul>
-    <li>The encryption code is two small files: <code>src/lib/crypto.js</code> (the envelope format — self-describing JSON: cipher, KDF, iterations, salt, IV) and the vault section of <code>src/lib/storage.js</code> (key handling). The scheduling engine (<code>src/lib/conductor.js</code>) is untouched by this change, byte for byte.</li>
-    <li>Automated tests cover: ciphertext-only storage (no student name appears anywhere in a stored record), wrong-passphrase and tamper refusal, key drop on lock, legacy plaintext import, and encrypted file round-trips. Full suite: 56 tests passing, including the 44 pre-existing engine/export tests, and the verified scheduling baseline is unchanged (436 assignments on the October run-through data, identical result hash).</li>
-    <li>Cadence still makes no network calls; nothing about this change phones home or syncs anywhere.</li>
-  </ul>
+  <form id="gate-form">
+    <input id="gate-pw" type="password" autocomplete="current-password" placeholder="Passphrase" aria-label="Passphrase">
+    <button type="submit" id="gate-btn">Open the page</button>
+  </form>
+  <p id="gate-err" class="err" style="display:none">That passphrase didn't open the page. Check it and try again.</p>
+  <p id="gate-busy" class="busy" style="display:none">Opening…</p>
+  <noscript><p class="err">This page needs JavaScript enabled to open.</p></noscript>
 
   <footer>
-    Cadence is built by Swamp Shell Industries LLC for Warren County Summer Music School. Practice data only — no real student records appear on this page or in the prototype.
+    Cadence is built by Swamp Shell Industries LLC for Warren County Summer Music School.
   </footer>
 
 </div>
+<script>
+var PAYLOAD={"iter":600000,"salt":"whbYdBnEVnDUEkcLyxGXjw==","iv":"SVQcJGI3ETiiqQt2","data":"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"};
+var form=document.getElementById('gate-form'),
+    input=document.getElementById('gate-pw'),
+    err=document.getElementById('gate-err'),
+    busy=document.getElementById('gate-busy'),
+    btn=document.getElementById('gate-btn');
+function b64(s){var bin=atob(s);var u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++){u[i]=bin.charCodeAt(i);}return u;}
+async function tryOpen(pw){
+  var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  var key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64(PAYLOAD.salt),iterations:PAYLOAD.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(PAYLOAD.iv)},key,b64(PAYLOAD.data));
+  return new TextDecoder().decode(pt);
+}
+async function openPage(pw,silent){
+  err.style.display='none';busy.style.display='block';btn.disabled=true;
+  try{
+    var html=await tryOpen(pw);
+    try{sessionStorage.setItem('cadence_gate_pw',pw);}catch(e){}
+    document.open();document.write(html);document.close();
+  }catch(e){
+    try{sessionStorage.removeItem('cadence_gate_pw');}catch(e2){}
+    busy.style.display='none';btn.disabled=false;
+    form.style.display='block';
+    if(!silent){err.style.display='block';}
+  }
+}
+form.addEventListener('submit',function(ev){ev.preventDefault();var pw=input.value;if(pw){openPage(pw,false);}});
+(function(){
+  var saved=null;
+  try{saved=sessionStorage.getItem('cadence_gate_pw');}catch(e){}
+  if(saved){form.style.display='none';openPage(saved,true);}
+  else{input.focus();}
+})();
+</script>
 </body>
 </html>

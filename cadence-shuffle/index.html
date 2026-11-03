@@ -56,6 +56,7 @@
     font-size:1.35rem;font-weight:800;margin:2.4rem 0 .7rem;
     padding-top:1.4rem;border-top:2px solid var(--brick);
   }
+  h3{font-size:1.08rem;font-weight:800;margin:1.5rem 0 .5rem;color:var(--brick-dark)}
   p{margin-bottom:1rem;max-width:42rem}
   ul{margin:0 0 1rem 1.3rem;max-width:42rem}
   li{margin-bottom:.45rem}
@@ -113,6 +114,52 @@
   <h2>Try it yourself</h2>
   <p>The prototype is live. Sign-in is pre-filled — just click Sign In, then try the import workspace, Run Scheduler, and the Unresolved Queue.</p>
   <p><a class="demo" href="https://stevensnelsonii-commits.github.io/swampshell-prime/cadence/">Open the Cadence prototype</a></p>
+
+  <h2>For Jen — how the student data is protected</h2>
+  <p><i>This section describes the production release candidate — the RC1 build with its encryption layer, prepared on our release branch. It is not the live public demo linked above; that demo still runs without these protections, which is exactly why real student data has never been loaded into it. The note is written for the district IT review, limits included.</i></p>
+  <p><b>In one sentence:</b> student records that Cadence saves on a device, and student-data files that travel between people, are now encrypted with a passphrase — they are no longer sitting in the browser as readable text.</p>
+
+  <h3>What is encrypted</h3>
+  <ul>
+    <li><b>Saved scenarios on the device.</b> A saved scenario contains the complete student list (names, grades, guardians, contacts, medical notes) plus every class request. These were previously stored in the browser's local storage as plain, readable text. They are now stored only as ciphertext.</li>
+    <li><b>The override audit trail</b> — the log of manual placement changes, which names students — is encrypted the same way.</li>
+    <li><b>Files that leave the machine.</b> A scenario file exported from Cadence is produced <i>only</i> in encrypted form, under a passphrase the sender sets for that file. A data file (for example a Rediker export) can likewise be sealed into an encrypted file before it goes into a shared folder or an email, and Cadence's Upload buttons recognize the sealed file and ask for its passphrase instead of failing.</li>
+  </ul>
+  <p>Working data typed into the scheduler during a live session is not encrypted while it is on screen — the program has to show it to the person using it. The encryption covers what is <i>saved</i> and what is <i>sent</i>.</p>
+
+  <h3>How it works</h3>
+  <ul>
+    <li><b>Cipher:</b> AES-256-GCM — the standard authenticated encryption built into every modern browser (WebCrypto); no third-party cryptography code was added, and Cadence still makes no network calls.</li>
+    <li><b>Key derivation:</b> the encryption key is derived from a passphrase with PBKDF2-HMAC-SHA-256 at 600,000 iterations (the current OWASP recommendation for this method), with a random salt per device — guessing passphrases is deliberately expensive.</li>
+    <li><b>Integrity:</b> GCM authentication means a wrong passphrase and a tampered-with file fail identically and are refused; there is no partial or silent decryption.</li>
+    <li><b>Key handling:</b> the derived key exists only in the tab's memory. It is never written to disk, never logged, and never put in a file. Locking the data (one click in the Scheduler) or closing/reloading the page destroys it. Exported files carry only the salt and iteration count needed to re-derive the key — never the key or the passphrase.</li>
+    <li><b>Passphrase:</b> in the gated build, the entry password the team already uses doubles as the data passphrase — one password to sign in and unlock the data. Scenario files use a separate passphrase chosen per export, so a file can be shared without sharing the device password.</li>
+  </ul>
+
+  <h3>What this protects against</h3>
+  <ul>
+    <li><b>Shared school computers.</b> Another person opening the same browser later cannot read saved student records out of the browser's storage — without the passphrase, the storage holds ciphertext. (This was the audit's main finding, and it is fixed.)</li>
+    <li><b>Casual access to a device or its files.</b> The browser profile folder no longer contains a readable student list.</li>
+    <li><b>Files in transit.</b> A scenario file or student-data export that lands in the wrong inbox or the wrong shared folder is ciphertext. It opens only with its passphrase, which should travel separately (a phone call, not the same email thread).</li>
+    <li><b>Quiet alteration.</b> A modified encrypted file fails its integrity check on open and is refused, rather than importing altered records.</li>
+  </ul>
+
+  <h3>The honest limits</h3>
+  <ul>
+    <li><b>A passphrase is not an account system.</b> Anyone who knows the passphrase and can open the app can read the data — that is what a passphrase means. There are no per-user identities, no per-user permissions, and no record of <i>who</i> unlocked the data. Real accounts remain the production step, and the decision about where student records live in production (district-hosted, managed service, or an agreed local procedure) is still WCSMS's to make. This layer hardens the interim local model; it does not replace that decision.</li>
+    <li><b>Out of scope, plainly:</b> a determined attacker who has both the passphrase and the machine; malware already running on the computer; someone watching the screen during an unlocked session. Client-side encryption on a single shared passphrase does not defend against those, and this note does not claim it does.</li>
+    <li><b>No recovery.</b> If the data passphrase for a device is forgotten, the encrypted saves on that device are unreadable — by design; there is no back door and no reset. Exported scenario files (with their own passphrases) are the practical backup.</li>
+    <li><b>Still one device, still no backup.</b> The data home is unchanged: this browser, this machine. If the browser profile is deleted or "cleaned," the encrypted saves go with it. Encryption protects confidentiality, not durability.</li>
+    <li><b>Printed and exported working documents are unchanged.</b> Rosters, contact lists, and medical lists are still produced as readable documents and printouts, because staff need them on paper. How those are handled is a school procedure question, not something this layer governs.</li>
+    <li><b>Old saves migrate forward.</b> Scenario saves made before this change are plaintext on disk until the next time they are opened and re-saved with the data unlocked, at which point they are rewritten encrypted automatically. On a machine that has run the older build, treat the old plaintext as present until that migration has happened once.</li>
+  </ul>
+
+  <h3>What a reviewer can check</h3>
+  <ul>
+    <li>The encryption code is two small files: <code>src/lib/crypto.js</code> (the envelope format — self-describing JSON: cipher, KDF, iterations, salt, IV) and the vault section of <code>src/lib/storage.js</code> (key handling). The scheduling engine (<code>src/lib/conductor.js</code>) is untouched by this change, byte for byte.</li>
+    <li>Automated tests cover: ciphertext-only storage (no student name appears anywhere in a stored record), wrong-passphrase and tamper refusal, key drop on lock, legacy plaintext import, and encrypted file round-trips. Full suite: 56 tests passing, including the 44 pre-existing engine/export tests, and the verified scheduling baseline is unchanged (436 assignments on the October run-through data, identical result hash).</li>
+    <li>Cadence still makes no network calls; nothing about this change phones home or syncs anywhere.</li>
+  </ul>
 
   <footer>
     Cadence is built by Swamp Shell Industries LLC for Warren County Summer Music School. Practice data only — no real student records appear on this page or in the prototype.

@@ -115,6 +115,10 @@
   <p>The prototype is live. Sign-in is pre-filled — just click Sign In, then try the import workspace, Run Scheduler, and the Unresolved Queue.</p>
   <p><a class="demo" href="https://stevensnelsonii-commits.github.io/swampshell-prime/cadence/">Open the Cadence prototype</a></p>
 
+  <h3>The gated production candidate — login + encryption</h3>
+  <p>We've also posted the gated candidate build — the production release candidate described in the note for Jen below. It opens behind an interim entry gate and carries the encryption layer; it holds practice data only, and real per-user accounts come with the data-home decision in production. The temporary passphrase for it is in Steve's email to the team — it is not published here.</p>
+  <p><a class="demo" href="https://swampshellindustriesllc.com/cadence-rc1/">Open the gated production candidate</a></p>
+
   <h2>For Jen — how the student data is protected</h2>
   <p><i>This section describes the production release candidate — the RC1 build with its encryption layer, prepared on our release branch. It is not the live public demo linked above; that demo still runs without these protections, which is exactly why real student data has never been loaded into it. The note is written for the district IT review, limits included.</i></p>
   <p><b>In one sentence:</b> student records that Cadence saves on a device, and student-data files that travel between people, are now encrypted with a passphrase — they are no longer sitting in the browser as readable text.</p>

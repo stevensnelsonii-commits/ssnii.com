@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadence — The Class Shuffle, Run Ten Times | Swamp Shell Industries</title>
+<meta name="description" content="Cadence, the class-scheduling program built for Warren County Summer Music School, runs its scheduler ten times on last year's anonymized practice data. Same answer every time.">
+<style>
+  :root{
+    --bone:#f0e7d3;
+    --bone2:#e7dcc2;
+    --ink:#2b2118;
+    --muted:#6d5c44;
+    --brick:#bf4e4e;
+    --brick-dark:#711b19;
+    --yellow:#daca47;
+    --line:#cbbd9c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bone);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+  .brand{
+    font-size:.8rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--brick-dark);margin-bottom:2rem;
+  }
+  .brand span{color:var(--muted)}
+  .wip{
+    background:var(--yellow);
+    border:2px solid var(--brick-dark);
+    color:var(--ink);
+    font-weight:700;
+    padding:.8rem 1.1rem;
+    margin-bottom:2rem;
+    font-size:.98rem;
+  }
+  .wip b{color:var(--brick-dark);text-transform:uppercase;letter-spacing:.08em}
+  h1{
+    font-size:clamp(1.9rem,5vw,2.7rem);font-weight:800;line-height:1.15;
+    letter-spacing:-.01em;margin-bottom:.6rem;
+  }
+  h1 em{font-style:normal;color:var(--brick)}
+  .lede{font-size:1.12rem;color:var(--muted);max-width:38rem;margin-bottom:2rem}
+  video{
+    width:100%;height:auto;display:block;
+    background:#000;border:1px solid var(--line);
+    margin-bottom:.5rem;
+  }
+  .vcap{font-size:.9rem;color:var(--muted);margin-bottom:2.5rem}
+  h2{
+    font-size:1.35rem;font-weight:800;margin:2.4rem 0 .7rem;
+    padding-top:1.4rem;border-top:2px solid var(--brick);
+  }
+  p{margin-bottom:1rem;max-width:42rem}
+  ul{margin:0 0 1rem 1.3rem;max-width:42rem}
+  li{margin-bottom:.45rem}
+  .stats{
+    display:flex;flex-wrap:wrap;gap:1rem;margin:1.4rem 0 .4rem;
+  }
+  .stat{
+    background:var(--bone2);border:1px solid var(--line);
+    padding:.9rem 1.1rem;min-width:9.5rem;flex:1;
+  }
+  .stat b{display:block;font-size:1.7rem;line-height:1.1;color:var(--brick-dark)}
+  .stat span{font-size:.85rem;color:var(--muted)}
+  .demo{
+    display:inline-block;margin-top:.6rem;
+    background:var(--brick-dark);color:var(--bone);
+    font-weight:700;text-decoration:none;
+    padding:.85rem 1.5rem;border-bottom:4px solid var(--brick);
+  }
+  .demo:hover{background:var(--brick)}
+  footer{
+    margin-top:3.5rem;padding-top:1.2rem;border-top:1px solid var(--line);
+    font-size:.88rem;color:var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="brand">Swamp Shell Industries <span>— Cadence</span></p>
+
+  <div class="wip"><b>Work in progress:</b> this page shows a prototype demonstration. Cadence is still in development — what you're watching is the working system doing the real job on practice data, not the finished production version.</div>
+
+  <h1>The class shuffle, <em>run ten times.</em></h1>
+  <p class="lede">Cadence is the scheduling program we're building for Warren County Summer Music School. This video runs the scheduler ten times in a row on last year's practice data — and gets the same answer every time.</p>
+
+  <video controls preload="metadata" src="cadence-shuffle-sim-10-runs.mp4"></video>
+  <p class="vcap">The Cadence scheduler running ten times on the anonymized practice data: 99 students, 35 classes, 693 requests.</p>
+
+  <h2>How the shuffle works</h2>
+  <p>Applications are processed first come, first served, in the order they came in. Each student's choices are tried in the order they ranked them. If a first choice is full, or it clashes with something already on that student's schedule, Cadence writes down why and moves on to the next choice automatically.</p>
+  <p>Anyone it genuinely can't place lands on a short list with the reason, and the open classes that would actually fit them. Nothing ever fails silently.</p>
+
+  <h2>What happened in the video</h2>
+  <p>Ten runs, one identical result. The data is last year's run-through, anonymized — real numbers, made-up names. Every name you see on screen is a practice name; no real student information has ever been in this system.</p>
+  <div class="stats">
+    <div class="stat"><b>436</b><span>class assignments made, every run</span></div>
+    <div class="stat"><b>97 of 99</b><span>students got their first-choice A-period class</span></div>
+    <div class="stat"><b>0</b><span>double-bookings, overfilled classes, or teacher/room clashes</span></div>
+    <div class="stat"><b>10 / 10</b><span>runs identical</span></div>
+  </div>
+
+  <h2>The honest part</h2>
+  <p>46 of the 99 students end up one class short — and that's not the engine failing. 20 of the 35 classes were asked for more times than they have seats: Music Video alone had 57 asks for 16 seats. When demand runs past the chairs, somebody lands a class short no matter who does the scheduling. What Cadence does is show its work: each of those students is listed with the reason, and the open classes that fit them, so the list can be worked through by hand.</p>
+
+  <h2>Try it yourself</h2>
+  <p>The prototype is live. Sign-in is pre-filled — just click Sign In, then try the import workspace, Run Scheduler, and the Unresolved Queue.</p>
+  <p><a class="demo" href="https://stevensnelsonii-commits.github.io/swampshell-prime/cadence/">Open the Cadence prototype</a></p>
+
+  <footer>
+    Cadence is built by Swamp Shell Industries LLC for Warren County Summer Music School. Practice data only — no real student records appear on this page or in the prototype.
+  </footer>
+
+</div>
+</body>
+</html>

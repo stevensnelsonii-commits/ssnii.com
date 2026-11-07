@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Drop Zone — Next Build (Staged)</title>
+<link rel="stylesheet" href="next.css" />
+</head>
+<body>
+<main class="dz-layout">
+  <section id="dz-stage" aria-label="Sector map">
+    <div class="dz-cloud-layer dz-cloud-back" data-cloud-layer="back"></div>
+    <div id="dz-viewport">
+      <div id="dz-plane" aria-label="24 by 24 sector grid in a tilted three-quarter view"></div>
+    </div>
+    <div class="dz-cloud-layer dz-cloud-front" data-cloud-layer="front"></div>
+    <div id="dz-box" hidden></div>
+    <div id="dz-scen" hidden>
+      <canvas id="dz-scen-canvas" width="1100" height="700"></canvas>
+      <div id="dz-scen-caption" aria-live="polite"></div>
+    </div>
+    <div id="dz-flash"></div>
+  </section>
+
+  <!-- THE ONE WINDOW: every control in the build lives in this panel. -->
+  <aside id="dz-panel" aria-label="Drop Zone command panel">
+    <header class="dz-panel-head">
+      <p class="dz-kicker">SWAMP SHELL INDUSTRIES — STAGED BUILD</p>
+      <h1>DROP ZONE</h1>
+      <p class="dz-sub">Overnight build · drop scenario · squads · RTS camera · one window</p>
+      <form id="dz-seed-form">
+        <label>Seed <input id="dz-seed" type="text" autocomplete="off" /></label>
+        <button type="submit">Load</button>
+        <button type="button" id="dz-newgame">New game</button>
+      </form>
+    </header>
+
+    <section class="dz-block" id="dz-status-block">
+      <div id="dz-status" class="dz-chips"></div>
+      <p id="dz-ship-line" class="dz-note"></p>
+    </section>
+
+    <section class="dz-block">
+      <h2>Sector minimap</h2>
+      <canvas id="dz-minimap" width="264" height="264"></canvas>
+      <p class="dz-note">Tap the minimap to jump the camera. Yellow = airship, red wash = storm.</p>
+    </section>
+
+    <section class="dz-block">
+      <h2>Weather — one system</h2>
+      <div id="dz-weather"></div>
+    </section>
+
+    <section class="dz-block">
+      <h2>Squad</h2>
+      <p id="dz-squad-summary" class="dz-note"></p>
+      <div class="dz-row">
+        <button type="button" id="dz-squad-all">All ready divers</button>
+        <button type="button" id="dz-squad-clear">Clear squad</button>
+      </div>
+      <div id="dz-roster"></div>
+    </section>
+
+    <section class="dz-block">
+      <h2>Orders</h2>
+      <div id="dz-target-info"></div>
+      <div class="dz-orders">
+        <button type="button" id="dz-btn-drop" class="dz-primary">▶ Drop squad</button>
+        <button type="button" id="dz-btn-move">Move airship here</button>
+        <button type="button" id="dz-btn-recon">Buy recon</button>
+        <button type="button" id="dz-btn-found">Found settlement</button>
+        <button type="button" id="dz-btn-refuel">Refuel airship</button>
+        <button type="button" id="dz-btn-endturn" class="dz-danger">End turn</button>
+      </div>
+      <p class="dz-note">Fast path: select a squad, then right-click (or tap Drop, then tap) any tile — the drop plays out. No menus in the drop path.</p>
+    </section>
+
+    <section class="dz-block" id="dz-scen-block" hidden>
+      <h2>Drop in progress</h2>
+      <p id="dz-scen-phase" class="dz-note"></p>
+      <div id="dz-scen-actions" class="dz-scen-actions"></div>
+      <div id="dz-scen-choices" class="dz-scen-choices"></div>
+      <button type="button" id="dz-btn-skip" class="dz-primary">Skip ▸▸</button>
+      <p class="dz-note">THE FALL is a playable cinematic: steer with arrow keys / WASD or drag on the scene — and dodge the lightning the tile's own storm throws at you; crosswind gusts shove the fall sideways. ON THE GROUND it is a turn-based RPG: tap a diver, tap the ground to walk them (action points per turn), FIRE / INTERACT / talk from the buttons above, EXTRACT when the haul is worth the risk. All controls work by tap alone — no hover, no right-click, no keyboard required.</p>
+    </section>
+
+    <section class="dz-block">
+      <h2>Creator — diver</h2>
+      <div id="dz-creator"></div>
+      <p class="dz-note">Lightweight creator hook: name + look + trait summary. Conceptually the same face Prime's character creator will own — full Prime integration is later work.</p>
+    </section>
+
+    <section class="dz-block">
+      <h2>Last drop report</h2>
+      <div id="dz-report"><p class="dz-note">No drops yet this game.</p></div>
+    </section>
+
+    <section class="dz-block">
+      <h2>Camera</h2>
+      <div class="dz-row dz-zoomrow">
+        <button type="button" id="dz-zoom-out" aria-label="Zoom out">−</button>
+        <span id="dz-zoom-level">100%</span>
+        <button type="button" id="dz-zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" id="dz-zoom-reset">Reset view</button>
+      </div>
+      <label class="dz-check"><input type="checkbox" id="dz-edgepan" checked /> Edge pan (mouse at screen border)</label>
+      <label class="dz-check"><input type="checkbox" id="dz-reduced" /> Reduce motion</label>
+      <p class="dz-note">Classic RTS camera: arrow keys pan · screen edge pans · drag the ground to move · scroll / pinch / + − to zoom — anchored on your selection when you have one, on the cursor when you don't · <b>F</b> zooms the camera to your selection. Touchpad-first: no order needs a right-click — select, then use the Orders buttons. Shift-drag boxes a squad.</p>
+    </section>
+
+    <section class="dz-block">
+      <h2>Feedback</h2>
+      <ul id="dz-log"></ul>
+    </section>
+
+    <div id="dz-menu" hidden></div>
+  </aside>
+</main>
+<script src="core.js"></script>
+<script src="encounters.js"></script>
+<script src="weather.js"></script>
+<script src="portraits.js"></script>
+<script src="next.js"></script>
+</body>
+</html>

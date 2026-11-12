@@ -102,38 +102,44 @@ main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
   background: url('assets/skyline.png') repeat-x center bottom / auto 100%;
   opacity: 0.5; filter: brightness(0.75) saturate(0.7); pointer-events: none;
 }
-/* On-map airship marker — floats above the airship's cell, tethered to
-   it. Top-down (2026-11-12): the board lies flat, so the marker needs
-   no counter-rotation (the 3/4 build rotated it -55deg to stand it
-   upright on the tilted plane). */
+/* On-map airship marker — floats above the airship's cell, tethered
+   to it. 3/4 (2026-11-12 PM): counter-rotated -55deg (= -TILT_DEG in
+   ui.js) so it rides upright over the tilted plane, as in the
+   2026-11-10 build. */
 #ship-marker {
   position: absolute; z-index: 6; pointer-events: none; text-align: center;
-  transform: translate(-50%, -100%); transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotateX(-55deg); transform-origin: 50% 100%;
   animation: ship-bob 4.5s ease-in-out infinite alternate;
   filter: drop-shadow(0 3px 3px rgba(0,0,0,0.55));
 }
 @keyframes ship-bob {
-  from { transform: translate(-50%, -100%) translateY(-2px); }
-  to { transform: translate(-50%, -100%) translateY(3px); }
+  from { transform: translate(-50%, -100%) rotateX(-55deg) translateY(-2px); }
+  to { transform: translate(-50%, -100%) rotateX(-55deg) translateY(3px); }
 }
 #ship-marker .ship-tether {
   width: 0; height: 9px; margin: 1px auto 0; border-left: 2px dashed rgba(218,202,71,0.85);
 }
 
 /* Map board + hex grid (2026-11-07: the live map is a HEX field —
-   pointy-top hexagons in offset rows. 2026-11-12: the board is FLAT —
-   top-down, no CSS perspective, no preserve-3d (the 3/4 plane from the
-   2026-11-10 camera fix is retired: it did not work at this scale on
-   a phone, and the 3D compositing was the pan/zoom lag). The board
-   sits centered in #map-viewport and carries ONE camera transform set
-   only by ui.js applyCam(): translate(-50%,-50%) + pan + rotateX(0deg)
-   + scale. Selection NEVER writes this transform (that was the
-   click-moves-map bug). The grid, POI layer, apex layer and ship
-   marker all share the board's coordinate space so they scale
-   together. Flat 2D transforms composite on the GPU cheaply — that is
-   the point. */
+   pointy-top hexagons in offset rows. 2026-11-12 PM: the 3/4 plane is
+   BACK (Steve, reviewing the Rule 27 figure board: "This is 3/4.
+   Which I like now that the tiles are smaller") — CSS perspective +
+   preserve-3d restored, TILT_DEG = 55 in ui.js (the proven 2026-11-10
+   value), default zoom 1.8 so the NEAR detail tier is the opening
+   read. The flat top-down morning build stands in history: it was a
+   scale verdict, and the scale changed. The board sits centered in
+   #map-viewport and carries ONE camera transform set only by ui.js
+   applyCam(): translate(-50%,-50%) + pan + rotateX(55deg) + scale.
+   Selection NEVER writes this transform (that was the click-moves-map
+   bug). The grid, POI layer, apex layer and ship marker all share the
+   board's coordinate space so they scale together; modeled sprites,
+   apex skulls and the ship marker counter-rotate -55deg around their
+   ground anchors so they STAND on the tilted plane (map34 pattern).
+   NOTE: the -55deg in the marker rules below mirrors TILT_DEG — keep
+   the two in step. */
 #map-viewport {
   position: relative; overflow: hidden; border-radius: 6px;
+  perspective: 1150px;
   height: clamp(330px, 62dvh, 560px);
   background:
     radial-gradient(ellipse 90% 55% at 50% 118%, rgba(111,163,196,0.30), rgba(111,163,196,0) 60%),
@@ -143,6 +149,7 @@ main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
 #map-board {
   position: absolute; left: 50%; top: 50%; width: min(97%, 660px);
   transform-origin: 50% 50%;
+  transform-style: preserve-3d;
   will-change: transform;
 }
 #map-grid {
@@ -269,7 +276,9 @@ main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
 #apex-layer { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .apex-marker {
   position: absolute; width: 30px; height: 32px;
-  transform: translate(-50%, -94%); transform-origin: 50% 100%;
+  /* Counter-rotated -55deg (= -TILT_DEG, ui.js): the skull STANDS on
+     the 3/4 plane instead of lying flat on it. */
+  transform: translate(-50%, -94%) rotateX(-55deg); transform-origin: 50% 100%;
   cursor: pointer; pointer-events: auto; background: none; border: none; padding: 0;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.65));
 }
@@ -544,20 +553,37 @@ label.pick { display: block; padding: 7px 8px; background: #232b33; border-radiu
 #grounded-banner.grounded { background: #711b19; border: 1px solid #bf4e4e; }
 #grounded-banner.lowfuel { background: #4d3d0a; border: 1px solid #daca47; }
 
-/* Ground battle */
-.ground-wrap { overflow: visible; padding: 46px 0 4px; }
-.ground-grid { display: grid; grid-template-columns: repeat(13, minmax(26px, 1fr)); gap: 2px; max-width: 560px; margin: 0 auto; }
+/* Ground battle — 3/4 FIELD (2026-11-12 PM, Steve: "This is 3/4.
+   Which I like now that the tiles are smaller"): the battle plane
+   tips back 28deg under the wrap's perspective, and every figure
+   counter-rotates -28deg around its feet so it STANDS on the field,
+   Myth-style. Tiles carry ground detail (speckle, shading, a south
+   edge) so the field reads as a place, not flat cells. */
+.ground-wrap { overflow: visible; padding: 46px 0 4px; perspective: 950px; }
+.ground-grid {
+  display: grid; grid-template-columns: repeat(13, minmax(26px, 1fr)); gap: 2px;
+  max-width: 560px; margin: 0 auto -6%;
+  transform: rotateX(28deg); transform-style: preserve-3d;
+}
 .gcell {
   aspect-ratio: 1; min-height: 26px; padding: 0; border-radius: 4px; font-size: 13px;
   display: flex; align-items: center; justify-content: center; position: relative;
-  background: #33503c; border: 1px solid #22301f; overflow: visible;
+  background-color: #33503c; border: 1px solid #22301f; overflow: visible;
+  transform-style: preserve-3d;
+  background-image:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.08) 0 1.5px, rgba(255,255,255,0) 2.2px),
+    radial-gradient(circle at 72% 64%, rgba(0,0,0,.18) 0 2px, rgba(0,0,0,0) 3.2px),
+    radial-gradient(circle at 55% 22%, rgba(0,0,0,.12) 0 1.5px, rgba(0,0,0,0) 2.6px),
+    linear-gradient(180deg, rgba(255,255,255,.09), rgba(0,0,0,.13) 86%, rgba(0,0,0,.32));
+  background-size: 11px 9px, 13px 11px, 9px 13px, 100% 100%;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
 }
-.gcell.rough { background: #4a4436; }
-.gcell.ruin { background: #4c4f44; }
-.gcell.water { background: #274b66; }
+.gcell.rough { background-color: #4a4436; }
+.gcell.ruin { background-color: #4c4f44; }
+.gcell.water { background-color: #274b66; }
 .gcell.fogged { opacity: 0.38; }
 .gcell.mapped { opacity: 0.7; }
-.gcell.burning { box-shadow: inset 0 0 0 2px #daca47, inset 0 0 12px rgba(218,202,71,0.55); }
+.gcell.burning { box-shadow: inset 0 0 0 2px #daca47, inset 0 0 12px rgba(218,202,71,0.55), inset 0 -3px 0 rgba(0,0,0,.28); }
 /* Rule 27 — FIGURES, not tokens: every unit stands on the field as a
  * full humanoid figure TWO TILES TALL (~6 ft), feet anchored on its
  * tile (bottom of the cell), body rising over the tile behind it.
@@ -565,7 +591,10 @@ label.pick { display: block; padding: 7px 8px; background: #232b33; border-radiu
  * DOM order is the painter's order: a southern figure paints over the
  * tile north of it, exactly like figures standing on real ground. */
 .gfigure {
-  position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: 1px;
+  /* Billboard: counter the field's 28deg tip around the feet, so the
+     figure stands upright in screen space on the 3/4 field. */
+  transform: translateX(-50%) rotateX(-28deg); transform-origin: 50% 100%;
   height: 196%; aspect-ratio: 1 / 2; display: block;
   pointer-events: none; z-index: 3; line-height: 1;
 }
@@ -597,7 +626,7 @@ label.pick { display: block; padding: 7px 8px; background: #232b33; border-radiu
   color: #ffd9d2; background: rgba(93,15,19,.94); border-radius: 3px; padding: 0 2px;
   pointer-events: none; white-space: nowrap; z-index: 4;
 }
-.gcell.reach { box-shadow: inset 0 0 0 2px rgba(218,202,71,.55); }
+.gcell.reach { box-shadow: inset 0 0 0 2px rgba(218,202,71,.55), inset 0 -3px 0 rgba(0,0,0,.28); }
 .turn-banner {
   border: 1px solid #38434e; border-left: 4px solid #daca47; border-radius: 8px;
   background: #1d242c; padding: 7px 10px; margin: 8px 0 0; font-size: 13px; line-height: 1.45;
@@ -611,7 +640,32 @@ label.pick { display: block; padding: 7px 8px; background: #232b33; border-radiu
 .hkey .hkey-fig svg { width: auto; height: 24px; }
 .hg-melee { color: #ff8a70; } .hg-ranged { color: #daca47; } .hg-flying { color: #a8d8ff; }
 .hg-plant { color: #9be15d; } .hg-machine { color: #ffb37a; } .hg-human { color: #e8e4d8; }
-.gpoi { color: #daca47; font-size: 11px; } .gdrift { color: #ffe9a8; font-size: 11px; } .gsite { color: #ffb37a; font-size: 11px; }
+/* Rule 29 — structure PIECES (the chessboard): POIs, supply crates and
+   machine wrecks stand ON their tiles as raised pieces, billboarded
+   like the figures (counter the 28deg field tip around their base).
+   Height is set inline per kind from PIECE_HEIGHTS in ui.js — tower
+   over house over wreck reads at a glance. z under the figures: a
+   diver in front of a building stands in front of it. */
+.gpiece {
+  position: absolute; left: 50%; bottom: 1px;
+  transform: translateX(-50%) rotateX(-28deg); transform-origin: 50% 100%;
+  aspect-ratio: 56 / 100; display: block; pointer-events: none; z-index: 2; line-height: 1;
+}
+.gpiece svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.gdrift { color: #ffe9a8; font-size: 11px; } .gsite { color: #ffb37a; font-size: 11px; }
+/* Rule 30 — the region cartouche: this sector IS Hades. */
+.region-tag {
+  position: absolute; left: 10px; top: 8px; z-index: 8; pointer-events: none;
+  font-weight: 900; letter-spacing: .14em; font-size: 17px; color: #e8e4d8;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8), 0 0 2px rgba(0,0,0,.9);
+}
+.region-tag span {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  color: #d8c9c4; text-transform: uppercase;
+}
+#charted-world h3 { margin: 2px 0 6px; letter-spacing: .08em; }
+#charted-world p { margin: 4px 0; font-size: 13px; line-height: 1.5; }
+#charted-world .cw-live { color: #8fe08f; font-weight: 800; }
 .unit-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 .unit-card {
   flex: 1 1 46%; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center;

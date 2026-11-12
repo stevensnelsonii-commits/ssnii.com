@@ -351,19 +351,27 @@
   var ATLAS = window.DZ_POI_ATLAS || null;
   var ZOOMS = [0.8, 1, 1.35, 1.8, 2.4, 3.2];
   var NEAR_MIN = 1.8;
-  var zoomIdx = 2;   // DEFAULT_ZOOM_IDX (declared with the camera) — opens at 1.35
+  var zoomIdx = 3;   // DEFAULT_ZOOM_IDX (declared with the camera) — opens at 1.8
 
-  /* ---------------- Camera: top-down presentation (2026-11-12) -------
-   * Steve's live phone-playtest rulings, implemented here and nowhere
-   * else. The 2026-11-12 rulings SUPERSEDE the 2026-11-10 3/4 ruling:
-   *  - TOP-DOWN is THE playable view: the board lies flat (rotateX(0),
-   *    no CSS perspective, no preserve-3d). The 3/4 tilt did not work
-   *    at this scale on a phone. TILT_DEG stays as the single knob the
-   *    transform + sprite counter-rotation read, pinned to 0.
-   *  - The default zoom shows roughly HALF the tiles the old zoom-1
-   *    default showed (bigger hexes, easier to read and tap): the
-   *    camera opens at ZOOMS[DEFAULT_ZOOM_IDX] = 1.35, ~55% of the
-   *    tile area visible. The world itself is unchanged (24x24).
+  /* ---------------- Camera: 3/4 presentation (2026-11-12, PM) --------
+   * Steve's rulings, implemented here and nowhere else. History: the
+   * 2026-11-10 build shipped 3/4 (rotateX 55deg); Steve's 2026-11-12
+   * morning phone playtest flattened it (top-down, TILT 0, zoom 1.35)
+   * because 3/4 did not work AT THAT SCALE. The same afternoon, with
+   * the Rule 27 figures standing on the field and the tiles smaller,
+   * Steve reversed it again — "This is 3/4. Which I like now that the
+   * tiles are smaller." His latest word stands:
+   *  - 3/4 IS THE playable view again: TILT_DEG = 55 (the proven Nov 10
+   *    value — the homography picking + sprite counter-rotation were
+   *    built and proven at exactly this tilt), CSS perspective +
+   *    preserve-3d restored on the viewport/board. TILT_DEG stays the
+   *    single knob the transform + counter-rotations read.
+   *  - The default zoom steps ONE MORE STEP IN from the morning's
+   *    1.35: the camera opens at ZOOMS[DEFAULT_ZOOM_IDX] = 1.8 —
+   *    roughly HALF the tile area visible again — and 1.8 IS the
+   *    NEAR_MIN threshold, so the detailed NEAR tier (modeled POI
+   *    sprites) is the default read: tiles carry detail, not flat
+   *    cells. The world itself is unchanged (24x24).
    *  - A WORLD MAP (minimap, #world-map) shows the whole charted
    *    sector, the ship + selection, and the current viewport
    *    rectangle; tapping it centres the main view there.
@@ -382,11 +390,11 @@
    *    midpoint; buttons/keys -> the selected tile, else viewport
    *    center. F focuses the selection (2026-11-03 ruling).
    *  - Picking goes through the screen<->plane homography defined by
-   *    the board's corner probes (proven in map34/next); flat, the
-   *    homography is affine and the same solver serves it.
+   *    the board's corner probes (proven in map34/next at this tilt);
+   *    the same solver served the flat morning build (affine case).
    * Zoom/pan are presentation state only — never saved, never in core. */
-  var TILT_DEG = 0;
-  var DEFAULT_ZOOM_IDX = 2;   // ZOOMS[2] = 1.35 — ~half the tiles visible
+  var TILT_DEG = 55;
+  var DEFAULT_ZOOM_IDX = 3;   // ZOOMS[3] = 1.8 — one step in from 1.35, ~half the tiles again, NEAR tier by default
   var cam = { panX: 0, panY: 0 };
   var suppressClickUntil = 0;   // set after a real pan drag, eats its click
   function camZoom() { return ZOOMS[zoomIdx]; }
@@ -748,6 +756,11 @@
     var bpy = ATLAS.height === r[3] ? 0 : r[1] / (ATLAS.height - r[3]) * 100;
     return { entry: s, css: 'background-size:' + bsx + '% ' + bsy + '%;background-position:' + bpx + '% ' + bpy + '%;' };
   }
+  /* Rule 30: the atlas's three radiation tiers, named as Nic's canon
+   * maps name them. The build's radiation values ride the tiers:
+   * 0 clean · 1 residual · 2 heavy contamination · 3+ severe fallout. */
+  var RAD_TIERS = ['clean', 'Residual radiation', 'Heavy contamination', 'Severe fallout'];
+  function radTierName(rad) { return RAD_TIERS[Math.max(0, Math.min(3, rad || 0))]; }
   function radMeter(rad) {
     var seg = '';
     for (var i = 0; i < 4; i++) seg += '<i class="' + (i < rad ? 'on' + rad : '') + '"></i>';
@@ -839,6 +852,41 @@
     '<circle cx="24" cy="21" r="2.4" fill="#fff6ae"/>' +
     '<path d="M16 88 C19 85 21 86 24 89 C27 86 29 85 32 88" stroke="#2c421e" stroke-width="2" fill="none"/>' +
     '</svg>';
+  /* Rule 29 (Steve, 2026-11-12 PM): THE CHESSBOARD — structures on the
+   * battle board are PIECES with HEIGHT, in the same diorama family as
+   * the Rule 27 figures: raised representations standing ON their
+   * tiles, drawn with lit top faces and shaded fronts so height reads
+   * as information from the 3/4 camera. Relative heights are the
+   * legend: silo/city tallest, warehouse/barn/depot mid, houses and
+   * stores lower, wrecks and crates low. Heights are % of a tile —
+   * figures stand 196% (~6 ft), a silo ~3 tiles. */
+  var PIECE_HEIGHTS = { silo: 300, city: 280, warehouse: 215, barn: 195, depot: 190, bunker: 120,
+    house_a: 175, house_b: 175, house_c: 175, store_a: 160, store_b: 160, store_c: 160, store_d: 160,
+    wreck: 88, crate: 62, debris: 55 };
+  function pieceSvg(kind) {
+    var top = '#a89a7c', front = '#7d6f55', side = '#5d5340', line = '#33302a', roof = '#6e4a3a';
+    if (kind === 'silo') return '<svg viewBox="0 0 48 100" aria-hidden="true"><ellipse cx="24" cy="96" rx="16" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M12 34 a12 9 0 0 1 24 0 Z" fill="#8f96a0" stroke="' + line + '" stroke-width="1.4"/><rect x="12" y="34" width="24" height="60" fill="#7c8288" stroke="' + line + '" stroke-width="1.4"/><path d="M24 34 v60" stroke="rgba(0,0,0,.22)" stroke-width="5"/><path d="M12 52 h24 M12 70 h24 M12 86 h24" stroke="rgba(0,0,0,.28)" stroke-width="1.6"/></svg>';
+    if (kind === 'city') return '<svg viewBox="0 0 48 100" aria-hidden="true"><ellipse cx="24" cy="96" rx="17" ry="3.4" fill="rgba(0,0,0,.4)"/><path d="M10 14 L24 7 L38 14 L38 20 L10 20 Z" fill="' + top + '" stroke="' + line + '" stroke-width="1.3"/><rect x="10" y="20" width="28" height="74" fill="' + front + '" stroke="' + line + '" stroke-width="1.4"/><path d="M24 7 v-4" stroke="' + line + '" stroke-width="2"/><g fill="#e8ddae"><rect x="15" y="28" width="4" height="5"/><rect x="22" y="28" width="4" height="5"/><rect x="29" y="28" width="4" height="5"/><rect x="15" y="40" width="4" height="5"/><rect x="29" y="40" width="4" height="5"/><rect x="18" y="52" width="4" height="5"/><rect x="26" y="52" width="4" height="5"/><rect x="15" y="64" width="4" height="5"/><rect x="22" y="64" width="4" height="5"/><rect x="29" y="64" width="4" height="5"/></g><rect x="20" y="80" width="8" height="14" fill="#4a4234"/></svg>';
+    if (kind === 'warehouse') return '<svg viewBox="0 0 72 100" aria-hidden="true"><ellipse cx="36" cy="96" rx="30" ry="3.6" fill="rgba(0,0,0,.38)"/><path d="M8 34 L22 24 L64 24 L56 34 Z" fill="' + top + '" stroke="' + line + '" stroke-width="1.3"/><path d="M56 34 L64 24 L64 88 L56 94 Z" fill="' + side + '" stroke="' + line + '" stroke-width="1.3"/><rect x="8" y="34" width="48" height="60" fill="' + front + '" stroke="' + line + '" stroke-width="1.4"/><rect x="24" y="56" width="18" height="38" fill="#57503f" stroke="' + line + '" stroke-width="1.4"/><path d="M24 56 L42 94 M42 56 L24 94" stroke="rgba(0,0,0,.3)" stroke-width="1.6"/><path d="M10 44 h44" stroke="rgba(0,0,0,.25)" stroke-width="2"/></svg>';
+    if (kind === 'barn') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="22" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M8 40 L16 26 L28 21 L40 26 L48 40 L48 46 L8 46 Z" fill="' + roof + '" stroke="' + line + '" stroke-width="1.4"/><rect x="10" y="46" width="36" height="48" fill="#86594a" stroke="' + line + '" stroke-width="1.4"/><path d="M21 62 h14 v32 H21 Z M21 62 L35 94 M35 62 L21 94" fill="none" stroke="#3d2f28" stroke-width="1.8"/></svg>';
+    if (kind === 'depot') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="23" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M13 52 a15 13 0 0 1 30 0 Z" fill="#9aa2a8" stroke="' + line + '" stroke-width="1.4"/><circle cx="28" cy="41" r="2.6" fill="#d7e94e"/><rect x="8" y="52" width="40" height="42" fill="#6d6a5e" stroke="' + line + '" stroke-width="1.4"/><rect x="21" y="66" width="14" height="28" rx="6" fill="#43413a" stroke="' + line + '" stroke-width="1.3"/></svg>';
+    if (kind === 'bunker') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="23" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M6 78 L20 68 L50 68 L44 78 Z" fill="' + top + '" stroke="' + line + '" stroke-width="1.3"/><rect x="6" y="78" width="38" height="16" fill="' + front + '" stroke="' + line + '" stroke-width="1.4"/><rect x="19" y="80" width="12" height="14" fill="#2f2c26"/></svg>';
+    if (kind === 'store') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="22" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M8 36 L20 28 L48 28 L42 36 Z" fill="' + top + '" stroke="' + line + '" stroke-width="1.3"/><rect x="8" y="36" width="34" height="58" fill="' + front + '" stroke="' + line + '" stroke-width="1.4"/><rect x="8" y="36" width="34" height="11" fill="#8c2f26"/><path d="M6 52 L44 52 L40 60 L10 60 Z" fill="#b39d6b" stroke="' + line + '" stroke-width="1.2"/><rect x="14" y="66" width="9" height="12" fill="#cfe0ea"/><rect x="28" y="66" width="8" height="28" fill="#4a4234"/></svg>';
+    if (kind === 'wreck') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="23" ry="3.2" fill="rgba(0,0,0,.4)"/><path d="M8 94 L12 66 L22 74 L28 58 L36 70 L44 62 L48 94 Z" fill="#5c5546" stroke="' + line + '" stroke-width="1.4"/><path d="M28 58 L38 40" stroke="#3a362e" stroke-width="3.4"/><circle cx="39" cy="38" r="3" fill="#3a362e"/><path d="M14 82 h28" stroke="rgba(0,0,0,.3)" stroke-width="2"/></svg>';
+    if (kind === 'crate') return '<svg viewBox="0 0 48 100" aria-hidden="true"><ellipse cx="24" cy="96" rx="17" ry="3" fill="rgba(0,0,0,.38)"/><path d="M8 66 L17 59 L40 59 L33 66 Z" fill="#9a8a68" stroke="' + line + '" stroke-width="1.3"/><rect x="8" y="66" width="25" height="28" fill="#7d6f55" stroke="' + line + '" stroke-width="1.4"/><path d="M33 66 L40 59 L40 87 L33 94 Z" fill="#5d5340" stroke="' + line + '" stroke-width="1.3"/><path d="M8 66 L33 94 M33 66 L8 94" stroke="rgba(0,0,0,.28)" stroke-width="1.6"/></svg>';
+    if (kind === 'debris') return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="22" ry="3" fill="rgba(0,0,0,.36)"/><path d="M6 94 L16 76 L24 86 L32 72 L40 84 L46 78 L50 94 Z" fill="#6b6252" stroke="' + line + '" stroke-width="1.3"/><path d="M18 88 L34 80" stroke="#3f3a30" stroke-width="2.6"/></svg>';
+    /* house (default) — ruined: pitched roof, one slope broken */
+    return '<svg viewBox="0 0 56 100" aria-hidden="true"><ellipse cx="28" cy="96" rx="22" ry="3.4" fill="rgba(0,0,0,.38)"/><path d="M6 48 L28 29 L50 48 L44 48 L28 36 L13 48 Z" fill="' + roof + '" stroke="' + line + '" stroke-width="1.4"/><path d="M36 34 L44 27 L44 40 L38 42 Z" fill="#57493a"/><rect x="12" y="48" width="32" height="46" fill="' + front + '" stroke="' + line + '" stroke-width="1.4"/><rect x="23" y="68" width="10" height="26" fill="#4a4234"/><rect x="16" y="55" width="7" height="8" fill="#cfe0ea"/><path d="M33 55 l7 8 M40 55 l-7 8" stroke="#3a352c" stroke-width="1.6"/></svg>';
+  }
+  function structurePiece(kindKey, label, hPct) {
+    var svgKind = /^store/.test(kindKey) ? 'store' : (/^house/.test(kindKey) ? 'house' : kindKey);
+    return '<span class="gpiece" title="' + esc(label) + '" style="height:' + hPct + '%">' + pieceSvg(svgKind) + '</span>';
+  }
+  function poiPiece(poiT) {
+    var pk = poiT.building || (poiT.kind === 'city' ? 'city' : poiT.kind === 'depot' ? 'depot' :
+      poiT.kind === 'debris' ? 'debris' : poiT.kind === 'bunker' ? 'bunker' : 'house_a');
+    return structurePiece(pk, poiT.label || pk, PIECE_HEIGHTS[pk] || 170);
+  }
   var MACHINE_SVG = '<svg viewBox="0 0 48 96" aria-hidden="true">' +
     '<ellipse cx="24" cy="91" rx="16" ry="3.6" fill="rgba(0,0,0,.42)"/>' +
     '<path d="M17 58 L14.5 86 L20 86 L22.5 62 Z" fill="#565b60" stroke="#26292c" stroke-width="1.4"/>' +
@@ -1052,7 +1100,7 @@
     var poiNotes = '';
     if (selPoi) {
       info += '<br><strong>' + esc(selPoi.label) + '</strong> — POI · state: <b>' + esc(selPoi.state.toUpperCase()) + '</b>' +
-        '<br>Radiation: ' + radMeter(selPoi.radiation) + ' ' + selPoi.radiation + '/4' +
+        '<br>Radiation: ' + radMeter(selPoi.radiation) + ' ' + selPoi.radiation + '/4 — ' + radTierName(selPoi.radiation) +
         (selPoi.radiation ? ' <span class="muted">(fauna +' + (selPoi.radiation * C.TUNABLES.radiationThreatWeight) + ' threat)</span>' : ' <span class="muted">(clean)</span>') +
         (selPoi.kind === 'depot' ? (selPoi.state === 'standing'
           ? '<br><span class="warn">Machine guardians hold this depot</span> <span class="muted">(+' + C.TUNABLES.depotGuardThreat + ' threat, fixed)</span>'
@@ -1480,7 +1528,7 @@
     var cityLocked = false;
     if (bPoi) {
       poiHtml = '<br><strong>' + esc(bPoi.label) + '</strong> — POI · state: <b>' + esc(bPoi.state.toUpperCase()) + '</b>' +
-        '<br>Radiation: ' + radMeter(bPoi.radiation) + ' ' + bPoi.radiation + '/4' +
+        '<br>Radiation: ' + radMeter(bPoi.radiation) + ' ' + bPoi.radiation + '/4 — ' + radTierName(bPoi.radiation) +
         (bPoi.radiation ? ' <span class="muted">(fauna +' + (bPoi.radiation * C.TUNABLES.radiationThreatWeight) + ' threat, in the projection)</span>' : ' <span class="muted">(clean)</span>') +
         (bPoi.kind === 'depot' && bPoi.state === 'standing' ? '<br><span class="warn">Machine guardians hold this depot</span> <span class="muted">(+' + C.TUNABLES.depotGuardThreat + ' threat, fixed)</span>' : '');
       poiHtml += '<br>Zone: <b>' + esc(C.poiZoneTier(bPoi).toUpperCase()) + '</b> <span class="muted">(fall x' +
@@ -2461,11 +2509,11 @@
         if (exp.flares.some(function (f) { return Math.abs(f.x - gx) + Math.abs(f.y - gy) <= 1; })) cls += ' burning';
         var inner = '';
         var poiT = C.poiAt(state, gx, gy);
-        if (poiT && mapped) inner = '<span class="gpoi">◈</span>';
+        if (poiT && mapped) inner = poiPiece(poiT);
         if (exp.drift[k] && seen) inner = '<span class="gdrift">✦</span>';
         if (exp.snippetSites && mapped && exp.snippetSites.some(function (sn) { return sn.x === gx && sn.y === gy; })) inner = '<span class="gsnip" title="A page from the books — stand here and INTERACT">✒</span>';
-        if (t && t.supplySite && !t.supplySite.looted && seen) inner = '<span class="gsite">$</span>';
-        if (t && t.robotSite && !t.robotSite.cleared && seen) inner = '<span class="gsite">⚠</span>';
+        if (t && t.supplySite && !t.supplySite.looted && seen) inner = structurePiece('crate', 'Supply crate — the heavy kit comes down in crates', PIECE_HEIGHTS.crate);
+        if (t && t.robotSite && !t.robotSite.cleared && seen) inner = structurePiece('wreck', 'Dormant war machine — a wreck until it wakes', PIECE_HEIGHTS.wreck);
         exp.members.forEach(function (m) {
           if (m.x === gx && m.y === gy) {
             var md = C.diverById(state, m.id);

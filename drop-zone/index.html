@@ -35,11 +35,14 @@
       and defend what you build. Win: settlement reaches Tier 2 and survives a raid.
       Lose: the settlement falls or every diver dies. Death is permanent — the Memorial remembers.</p>
     </details>
-    <p class="map-hint">Top-down sector view. Tap / click a tile to inspect it — the camera never moves on a tap.
+    <p class="map-hint">3/4 sector view — this sector is <strong>HADES</strong>, the Chicago wasteland. Tap / click a tile to inspect it — the camera never moves on a tap.
     Drag with one finger (touch) or the middle mouse button (PC) to pan; arrow keys and screen edges pan on PC.
     Scroll zooms where the pointer is; the + / − buttons zoom on the selected tile. F focuses the selection.
     The WORLD map (corner) shows the whole chart — tap it to jump the view.</p>
     <div id="map-scene">
+      <!-- Rule 30: the starting region is HADES — Chicago. The book's
+           name for the wasteland, worn on the map itself. -->
+      <div class="region-tag" aria-hidden="true">HADES<span>Chicago wasteland · ITC Headquarters</span></div>
       <div class="cloud-layer cloud-layer-back" data-cloud-layer="back" aria-hidden="true">
         <span class="cloud-mass cloud-back-1"></span>
         <span class="cloud-mass cloud-back-2"></span>
@@ -124,10 +127,10 @@
             terrain, fog, ship, selection, and the framed-area rectangle
             (#world-rect, positioned by ui.js). Tap a point to centre the
             main view there. -->
-       <div id="world-map" role="button" tabindex="0" aria-label="World map — tap to jump the view to that part of the sector">
+       <div id="world-map" role="button" tabindex="0" aria-label="World map — HADES, the Chicago wasteland — tap to jump the view to that part of the sector">
         <canvas id="world-canvas" width="232" height="232"></canvas>
         <div id="world-rect" aria-hidden="true"></div>
-        <span class="world-tag" aria-hidden="true">WORLD</span>
+        <span class="world-tag" aria-hidden="true">HADES</span>
        </div>
        </div>
       </div>
@@ -157,13 +160,25 @@
       <span><i class="key-swatch interdiction">✕</i> Hostile cache</span>
       <span><b>T0–T5</b> = threat rating</span>
       <span><i class="key-swatch poi-swatch"></i> Ruin POI — warehouse, silo, stores, houses, barn, depot, debris</span>
-      <span><i class="key-swatch rad-swatch"></i> Radiation wash — hotter ground, bigger and meaner fauna</span>
+      <span><i class="key-swatch rad-swatch"></i> Radiation wash — atlas tiers: Residual · Heavy contamination · Severe fallout; hotter ground, bigger and meaner fauna</span>
       <span><b class="endgame-tag">ENDGAME</b> City ruins — gated: 5 heroes at Lv 10 + things done</span>
       <span><span class="apex-key">☠</span> Apex — known, shown always; hover for intel</span>
     </div>
     <div id="objective-line" role="status"></div>
     <div id="grounded-banner" hidden></div>
     <div id="map-info" class="panel"></div>
+    <!-- Rule 30 — the world is Nic's map. This sector is the one live
+         region; every other name below is canon charted from the ITC
+         atlas (his maps, 2026-11-12) and filed for later acts — the
+         chart is honest about what is playable and what is not. -->
+    <div id="charted-world" class="panel">
+      <h3>THE CHARTED WORLD — ITC ATLAS</h3>
+      <p><span class="cw-live">● LIVE — HADES (Chicago):</span> ITC Headquarters and the wasteland the ship calls Hades. This sector. The campaign starts here.</p>
+      <p><strong>ITC facilities, charted:</strong> Los Angeles — West Coast ITC · Houston — Star-Section Landmark · Galveston — Port City.</p>
+      <p><strong>Charted places:</strong> Vanguard Islands — Main Settlement Hub · Mount Mitchell, NC · Charleston — Bastion · New Orleans — Port City · Miami — Lighthouse Landmark · Chichen Itza · Northern Belize — Iron Hand refinery / parts territory · Colón, Panama — Canal HQ · Panama Canal (Port Hobbs) — Cruiser outpost · Canary Islands · Casablanca, Morocco · Algiers, Morocco — Black-Harbor Fortress · Rio de Janeiro — Survivor Bastion · Mount Kilimanjaro — Machine Headquarters · Queensland — Knight of Coral Bastion · Mount Paektu · Mount Fuji · the Underground City + Cinderciun Station.</p>
+      <p><strong>Factions on the chart:</strong> ITC · Horse Lords · Machine Controlled Areas · Knights Territories · Cazador Territories · Pirate Slaver Areas · The Ashikaga Clan · The Triton Legion.</p>
+      <p class="muted">Beyond Hades, the chart is knowledge, not ground you can drop on — those regions are filed for later acts. Radiation everywhere reads in the atlas's three tiers: Residual · Heavy contamination · Severe fallout.</p>
+    </div>
     <div class="action-bar">
       <button id="btn-move" type="button">Move Airship</button>
       <button id="btn-drop" type="button">Plan Drop</button>

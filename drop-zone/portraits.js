@@ -74,11 +74,35 @@
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(hx, hy, headW, headH, S * 0.09); else ctx.rect(hx, hy, headW, headH);
     ctx.fill();
+    if (diver.heroId === 'nick') {
+      // Strong jaw (likeness, see hair note): widen the lower face.
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(hx - S * 0.012, hy + headH * 0.52, headW + S * 0.024, headH * 0.48, S * 0.07);
+      else ctx.rect(hx - S * 0.012, hy + headH * 0.52, headW + S * 0.024, headH * 0.48);
+      ctx.fill();
+    }
     // Hair style: 0 flat, 1 mop, 2 bun, 3 shaved sides + strap
     var hair = HAIR[Math.floor(rnd() * HAIR.length)];
     var style = Math.floor(rnd() * 4);
+    // LIKENESS (Steve, 2026-11-12 — "Match his likeness"): Nick's bust is
+    // drawn from his standard B&W author photo (workspace
+    // your_files/vegas-pics/nic_web.jpg): dark hair swept up off the
+    // forehead, a strong wide jaw, light stubble. His tattoo band rides
+    // his right forearm — below this bust's head/shoulders crop, exactly
+    // as in the photo's framing — so it is not drawn here.
+    var isNick = diver.heroId === 'nick';
+    if (isNick) { hair = '#2b2118'; style = 4; }
     ctx.fillStyle = hair;
-    if (style === 0) { ctx.fillRect(hx - S * 0.01, hy - S * 0.015, headW + S * 0.02, S * 0.075); }
+    if (style === 4) { // swept up: a taller mass rising off the forehead
+      ctx.beginPath();
+      ctx.moveTo(hx - S * 0.01, hy + S * 0.045);
+      ctx.quadraticCurveTo(hx + headW * 0.10, hy - S * 0.085, hx + headW * 0.52, hy - S * 0.075);
+      ctx.quadraticCurveTo(hx + headW * 0.95, hy - S * 0.06, hx + headW + S * 0.01, hy + S * 0.045);
+      ctx.lineTo(hx + headW + S * 0.01, hy + S * 0.075);
+      ctx.lineTo(hx - S * 0.01, hy + S * 0.075);
+      ctx.closePath(); ctx.fill();
+    }
+    else if (style === 0) { ctx.fillRect(hx - S * 0.01, hy - S * 0.015, headW + S * 0.02, S * 0.075); }
     else if (style === 1) {
       ctx.beginPath(); ctx.arc(S / 2, hy + S * 0.02, headW * 0.58, Math.PI, 0); ctx.fill();
       ctx.fillRect(hx - S * 0.02, hy - S * 0.01, S * 0.05, S * 0.10);
@@ -110,6 +134,14 @@
     ctx.moveTo(S / 2 - S * 0.05, hy + headH * 0.78);
     ctx.lineTo(S / 2 + S * 0.05, hy + headH * 0.78 + (nerve >= 4 ? -S * 0.008 : S * 0.004));
     ctx.stroke();
+    if (isNick) {
+      // Light stubble (likeness): translucent dark along the jaw sides
+      // and the chin, leaving the mouth clear.
+      ctx.fillStyle = 'rgba(43, 33, 24, 0.38)';
+      ctx.fillRect(hx + S * 0.008, hy + headH * 0.58, headW * 0.30, headH * 0.42);
+      ctx.fillRect(hx + headW * 0.70, hy + headH * 0.58, headW * 0.29, headH * 0.42);
+      ctx.fillRect(hx + headW * 0.28, hy + headH * 0.88, headW * 0.44, headH * 0.12);
+    }
     // Wound bandage when the diver is carrying wounds
     if (diver.wounds > 0 || diver.status === 'wounded') {
       ctx.fillStyle = '#f0e7d3';

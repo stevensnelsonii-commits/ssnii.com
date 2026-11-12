@@ -1,125 +1,421 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Drop Zone — Next Build (Staged)</title>
-<link rel="stylesheet" href="next.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Drop Zone</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main class="dz-layout">
-  <section id="dz-stage" aria-label="Sector map">
-    <div class="dz-cloud-layer dz-cloud-back" data-cloud-layer="back"></div>
-    <div id="dz-viewport">
-      <div id="dz-plane" aria-label="24 by 24 sector grid in a tilted three-quarter view"></div>
+<header id="hud">
+  <div class="hud-row">
+    <strong class="game-title">DROP ZONE</strong>
+    <span id="hud-turn">Turn 1</span>
+    <span id="hud-status"></span>
+  </div>
+  <div class="hud-row" id="hud-resources"></div>
+  <div class="hud-row hud-actions">
+    <button id="btn-newgame" type="button">New Game</button>
+    <button id="btn-export" type="button">Export Save</button>
+    <label class="import-label">Import Save <input id="file-import" type="file" accept="application/json" hidden></label>
+    <button id="btn-feedback" type="button">Feedback</button>
+    <button id="btn-guide" type="button">Help / Guide</button>
+    <button id="btn-sound" type="button">Sound: On</button>
+  </div>
+  <div id="hud-banner" hidden></div>
+  <div id="phase-banner" role="status" aria-live="polite"></div>
+</header>
+
+<main id="screens">
+  <section id="screen-map" class="screen">
+    <h2>Sector Map</h2>
+    <details class="howto"><summary>How to play</summary>
+      <p>Command the airship. Explore the sector, find the hidden green zone, found a settlement on it,
+      gather SCRAP / FUEL / FOOD / INTEL with drops, trade with Kestrel Colony, train replacements,
+      and defend what you build. Win: settlement reaches Tier 2 and survives a raid.
+      Lose: the settlement falls or every diver dies. Death is permanent — the Memorial remembers.</p>
+    </details>
+    <p class="map-hint">Top-down sector view. Tap / click a tile to inspect it — the camera never moves on a tap.
+    Drag with one finger (touch) or the middle mouse button (PC) to pan; arrow keys and screen edges pan on PC.
+    Scroll zooms where the pointer is; the + / − buttons zoom on the selected tile. F focuses the selection.
+    The WORLD map (corner) shows the whole chart — tap it to jump the view.</p>
+    <div id="map-scene">
+      <div class="cloud-layer cloud-layer-back" data-cloud-layer="back" aria-hidden="true">
+        <span class="cloud-mass cloud-back-1"></span>
+        <span class="cloud-mass cloud-back-2"></span>
+        <span class="cloud-mass cloud-back-3"></span>
+        <span class="cloud-mass cloud-back-4"></span>
+      </div>
+      <div id="ship-strip">
+        <!-- Hand-authored airship mark: WWII rigid zeppelin (inline SVG, no image assets). -->
+        <svg id="blimp" viewBox="0 0 264 76" width="168" height="48" role="img" aria-label="The airship — a rigid-frame zeppelin">
+          <g opacity="0.35" fill="#cfe6f5">
+            <ellipse cx="28" cy="56" rx="22" ry="5"/>
+            <ellipse cx="228" cy="12" rx="26" ry="5"/>
+          </g>
+          <!-- cruciform tail fins -->
+          <polygon points="212,22 240,4 236,24" fill="#5d6052"/>
+          <polygon points="212,40 240,58 236,38" fill="#5d6052"/>
+          <polygon points="214,31 244,31 214,38" fill="#4c4f44"/>
+          <polygon points="230,10 240,4 237,17" fill="#daca47"/>
+          <polygon points="230,52 240,58 237,45" fill="#daca47"/>
+          <!-- long rigid hull -->
+          <ellipse cx="118" cy="31" rx="106" ry="16.5" fill="#8a8d7c"/>
+          <path d="M12 31 a106 16.5 0 0 0 212 0 z" fill="#6f7263"/>
+          <!-- hull panel seams -->
+          <g stroke="#5d6052" stroke-width="1" opacity="0.55">
+            <line x1="48" y1="16.5" x2="48" y2="45.5"/>
+            <line x1="84" y1="14.8" x2="84" y2="47.2"/>
+            <line x1="120" y1="14.5" x2="120" y2="47.5"/>
+            <line x1="156" y1="14.8" x2="156" y2="47.2"/>
+            <line x1="188" y1="16.5" x2="188" y2="45.5"/>
+          </g>
+          <rect x="22" y="28.5" width="182" height="4.5" fill="#711b19" opacity="0.85"/>
+          <g fill="#daca47">
+            <rect x="52" y="29.2" width="4.5" height="3"/><rect x="66" y="29.2" width="4.5" height="3"/>
+            <rect x="80" y="29.2" width="4.5" height="3"/><rect x="94" y="29.2" width="4.5" height="3"/>
+            <rect x="108" y="29.2" width="4.5" height="3"/><rect x="122" y="29.2" width="4.5" height="3"/>
+            <rect x="136" y="29.2" width="4.5" height="3"/><rect x="150" y="29.2" width="4.5" height="3"/>
+          </g>
+          <!-- engine cars -->
+          <rect x="128" y="46" width="13" height="6" rx="2.5" fill="#3a3d33"/>
+          <rect x="168" y="44.5" width="13" height="6" rx="2.5" fill="#3a3d33"/>
+          <!-- underslung control car -->
+          <line x1="66" y1="43" x2="74" y2="53" stroke="#38434e" stroke-width="1.6"/>
+          <line x1="102" y1="44.5" x2="96" y2="53" stroke="#38434e" stroke-width="1.6"/>
+          <path d="M70 53 h38 l-4 10 h-28 z" fill="#2b3540" stroke="#711b19" stroke-width="1.6"/>
+          <g fill="#daca47">
+            <rect x="76" y="56" width="5" height="3.6"/><rect x="84" y="56" width="5" height="3.6"/>
+            <rect x="92" y="56" width="5" height="3.6"/>
+          </g>
+          <line x1="86" y1="63" x2="86" y2="74" stroke="#daca47" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+        </svg>
+        <span id="ship-caption"></span>
+      </div>
+      <div id="map-frame">
+       <div id="map-viewport">
+       <div id="map-board">
+        <div id="map-grid" role="grid" aria-label="Sector hex grid"></div>
+        <!-- Live map layers (2026-11-07): NEAR-tier modeled POI sprites and
+             the always-visible apex markers ride over the hex field. -->
+        <div id="poi-layer" aria-hidden="true"></div>
+        <div id="apex-layer"></div>
+        <div id="apex-card" hidden></div>
+        <!-- On-map airship marker: zeppelin silhouette hovering over its cell (positioned by ui.js). -->
+        <div id="ship-marker" aria-hidden="true">
+          <svg viewBox="0 0 52 24" width="40" height="18">
+            <polygon points="40,6 49,1 48,9" fill="#5d6052"/>
+            <polygon points="40,15 49,20 48,12" fill="#5d6052"/>
+            <ellipse cx="24" cy="10.5" rx="21" ry="6" fill="#c9c2ae" stroke="#2b3540" stroke-width="1.4"/>
+            <path d="M3 10.5 a21 6 0 0 0 42 0 z" fill="#8a8d7c"/>
+            <rect x="7" y="9.4" width="34" height="2" fill="#bf4e4e"/>
+            <path d="M16 15.5 h11 l-1.6 4.5 h-7.8 z" fill="#711b19" stroke="#2b3540" stroke-width="0.9"/>
+          </svg>
+          <div class="ship-tether"></div>
+        </div>
+        <!-- Picking probes: live screen positions of the board's corners
+             define the screen↔plane homography ui.js picks tiles with. -->
+        <span class="pick-probe" data-probe="0" style="left:3px;top:3px" aria-hidden="true"></span>
+        <span class="pick-probe" data-probe="1" style="left:calc(100% - 3px);top:3px" aria-hidden="true"></span>
+        <span class="pick-probe" data-probe="2" style="left:3px;top:calc(100% - 3px)" aria-hidden="true"></span>
+        <span class="pick-probe" data-probe="3" style="left:calc(100% - 3px);top:calc(100% - 3px)" aria-hidden="true"></span>
+       </div>
+       <!-- World map (2026-11-12): the whole charted sector at a glance —
+            terrain, fog, ship, selection, and the framed-area rectangle
+            (#world-rect, positioned by ui.js). Tap a point to centre the
+            main view there. -->
+       <div id="world-map" role="button" tabindex="0" aria-label="World map — tap to jump the view to that part of the sector">
+        <canvas id="world-canvas" width="232" height="232"></canvas>
+        <div id="world-rect" aria-hidden="true"></div>
+        <span class="world-tag" aria-hidden="true">WORLD</span>
+       </div>
+       </div>
+      </div>
+      <div class="map-zoom" role="group" aria-label="Map zoom">
+        <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+        <button type="button" id="zoom-reset" aria-label="Reset zoom">⌂</button>
+        <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+        <span id="zoom-level" aria-label="Zoom level">100%</span>
+      </div>
+      <div class="cloud-layer cloud-layer-front" data-cloud-layer="front" aria-hidden="true">
+        <span class="cloud-wisp cloud-front-1"></span>
+        <span class="cloud-wisp cloud-front-2"></span>
+        <span class="cloud-wisp cloud-front-3"></span>
+      </div>
     </div>
-    <div class="dz-cloud-layer dz-cloud-front" data-cloud-layer="front"></div>
-    <div id="dz-box" hidden></div>
-    <div id="dz-scen" hidden>
-      <canvas id="dz-scen-canvas" width="1100" height="700"></canvas>
-      <div id="dz-scen-caption" aria-live="polite"></div>
+    <div id="map-key" aria-label="Map key">
+      <strong>Map key:</strong>
+      <span><i class="key-swatch fog">?</i> Fog / unknown</span>
+      <span><i class="key-swatch open">●</i> Open</span>
+      <span><i class="key-swatch rough">▲</i> Rough</span>
+      <span><i class="key-swatch ruin">▦</i> Ruin</span>
+      <span><i class="key-swatch water">≈</i> Water — no landing</span>
+      <span><i class="key-swatch green">G</i> Green Zone</span>
+      <span><i class="key-swatch colony">⌂</i> Colony</span>
+      <span><i class="key-swatch supply">$</i> Supply cache</span>
+      <span><i class="key-swatch robot">⚠</i> Robot ruin</span>
+      <span><i class="key-swatch interdiction">✕</i> Hostile cache</span>
+      <span><b>T0–T5</b> = threat rating</span>
+      <span><i class="key-swatch poi-swatch"></i> Ruin POI — warehouse, silo, stores, houses, barn, depot, debris</span>
+      <span><i class="key-swatch rad-swatch"></i> Radiation wash — hotter ground, bigger and meaner fauna</span>
+      <span><b class="endgame-tag">ENDGAME</b> City ruins — gated: 5 heroes at Lv 10 + things done</span>
+      <span><span class="apex-key">☠</span> Apex — known, shown always; hover for intel</span>
     </div>
-    <div id="dz-flash"></div>
+    <div id="objective-line" role="status"></div>
+    <div id="grounded-banner" hidden></div>
+    <div id="map-info" class="panel"></div>
+    <div class="action-bar">
+      <button id="btn-move" type="button">Move Airship</button>
+      <button id="btn-drop" type="button">Plan Drop</button>
+      <button id="btn-gotoship" type="button">⚓ Ship Deck</button>
+      <button id="btn-found" type="button">Found Settlement</button>
+      <button id="btn-endturn" type="button" class="primary">End Turn</button>
+    </div>
   </section>
 
-  <!-- THE ONE WINDOW: every control in the build lives in this panel. -->
-  <aside id="dz-panel" aria-label="Drop Zone command panel">
-    <header class="dz-panel-head">
-      <p class="dz-kicker">SWAMP SHELL INDUSTRIES — STAGED BUILD</p>
-      <h1>DROP ZONE</h1>
-      <p class="dz-sub">Overnight build · drop scenario · squads · RTS camera · one window</p>
-      <form id="dz-seed-form">
-        <label>Seed <input id="dz-seed" type="text" autocomplete="off" /></label>
-        <button type="submit">Load</button>
-        <button type="button" id="dz-newgame">New game</button>
-      </form>
-    </header>
+  <section id="screen-ship" class="screen" hidden>
+    <h2>The Ship — Deck</h2>
+    <div id="deck-objective" role="status"></div>
+    <div id="deck-viewport">
+      <div id="deck-strip"></div>
+    </div>
+    <div id="deck-strip-nav" role="navigation" aria-label="Deck stations"></div>
+    <div class="action-bar">
+      <button id="btn-deck-map" type="button">🗺 Sector Map</button>
+      <span class="muted">Tap a station (or its strip button) to walk there. Desktop: ←/→ or A/D to walk, Enter opens the nearest station.</span>
+    </div>
+    <div id="deck-panel"></div>
+  </section>
 
-    <section class="dz-block" id="dz-status-block">
-      <div id="dz-status" class="dz-chips"></div>
-      <p id="dz-ship-line" class="dz-note"></p>
-    </section>
+  <div id="journal-overlay" class="panel journal-overlay" hidden></div>
 
-    <section class="dz-block">
-      <h2>Sector minimap</h2>
-      <canvas id="dz-minimap" width="264" height="264"></canvas>
-      <p class="dz-note">Tap the minimap to jump the camera. Yellow = airship, red wash = storm.</p>
-    </section>
+  <section id="screen-ground" class="screen" hidden>
+    <h2>On the Ground — the battle when you land</h2>
+    <div id="ground-body"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Weather — one system</h2>
-      <div id="dz-weather"></div>
-    </section>
+  <section id="screen-crew" class="screen" hidden>
+    <h2>Airship / Crew</h2>
+    <div id="ship-panel" class="panel"></div>
+    <div id="roster"></div>
+    <h3>Armory — the ship pool</h3>
+    <div id="armory-panel"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Squad</h2>
-      <p id="dz-squad-summary" class="dz-note"></p>
-      <div class="dz-row">
-        <button type="button" id="dz-squad-all">All ready divers</button>
-        <button type="button" id="dz-squad-clear">Clear squad</button>
-      </div>
-      <div id="dz-roster"></div>
-    </section>
+  <section id="screen-briefing" class="screen" hidden>
+    <h2>Drop Briefing</h2>
+    <div id="briefing-body"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Orders</h2>
-      <div id="dz-target-info"></div>
-      <div class="dz-orders">
-        <button type="button" id="dz-btn-drop" class="dz-primary">▶ Drop squad</button>
-        <button type="button" id="dz-btn-move">Move airship here</button>
-        <button type="button" id="dz-btn-recon">Buy recon</button>
-        <button type="button" id="dz-btn-found">Found settlement</button>
-        <button type="button" id="dz-btn-refuel">Refuel airship</button>
-        <button type="button" id="dz-btn-endturn" class="dz-danger">End turn</button>
-      </div>
-      <p class="dz-note">Fast path: select a squad, then right-click (or tap Drop, then tap) any tile — the drop plays out. No menus in the drop path.</p>
-    </section>
+  <section id="screen-report" class="screen" hidden>
+    <h2>Resolution Report</h2>
+    <div id="report-body"></div>
+    <div class="action-bar"><button id="btn-report-continue" type="button" class="primary">Continue</button></div>
+  </section>
 
-    <section class="dz-block" id="dz-scen-block" hidden>
-      <h2>Drop in progress</h2>
-      <p id="dz-scen-phase" class="dz-note"></p>
-      <div id="dz-scen-actions" class="dz-scen-actions"></div>
-      <div id="dz-scen-choices" class="dz-scen-choices"></div>
-      <button type="button" id="dz-btn-skip" class="dz-primary">Skip ▸▸</button>
-      <p class="dz-note">THE FALL is a playable cinematic: steer with arrow keys / WASD or drag on the scene — and dodge the lightning the tile's own storm throws at you; crosswind gusts shove the fall sideways. ON THE GROUND it is a turn-based RPG: tap a diver, tap the ground to walk them (action points per turn), FIRE / INTERACT / talk from the buttons above, EXTRACT when the haul is worth the risk. All controls work by tap alone — no hover, no right-click, no keyboard required.</p>
-    </section>
+  <section id="screen-settlement" class="screen" hidden>
+    <h2>Settlement</h2>
+    <div id="settlement-body"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Creator — diver</h2>
-      <div id="dz-creator"></div>
-      <p class="dz-note">Lightweight creator hook: name + look + trait summary. Conceptually the same face Prime's character creator will own — full Prime integration is later work.</p>
-    </section>
+  <section id="screen-defense" class="screen" hidden>
+    <h2>Defense</h2>
+    <div id="defense-body"></div>
+    <div class="action-bar"><button id="btn-defense-speed" type="button">Speed-up</button></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Last drop report</h2>
-      <div id="dz-report"><p class="dz-note">No drops yet this game.</p></div>
-    </section>
+  <section id="screen-trade" class="screen" hidden>
+    <h2>Trade — Colony &amp; Radio Markets</h2>
+    <div id="trade-body"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Camera</h2>
-      <div class="dz-row dz-zoomrow">
-        <button type="button" id="dz-zoom-out" aria-label="Zoom out">−</button>
-        <span id="dz-zoom-level">100%</span>
-        <button type="button" id="dz-zoom-in" aria-label="Zoom in">+</button>
-        <button type="button" id="dz-zoom-reset">Reset view</button>
-      </div>
-      <label class="dz-check"><input type="checkbox" id="dz-edgepan" checked /> Edge pan (mouse at screen border)</label>
-      <label class="dz-check"><input type="checkbox" id="dz-reduced" /> Reduce motion</label>
-      <p class="dz-note">Classic RTS camera: arrow keys pan · screen edge pans · drag the ground to move · scroll / pinch / + − to zoom — anchored on your selection when you have one, on the cursor when you don't · <b>F</b> zooms the camera to your selection. Touchpad-first: no order needs a right-click — select, then use the Orders buttons. Shift-drag boxes a squad.</p>
-    </section>
+  <section id="screen-training" class="screen" hidden>
+    <h2>Training</h2>
+    <div id="training-body"></div>
+  </section>
 
-    <section class="dz-block">
-      <h2>Feedback</h2>
-      <ul id="dz-log"></ul>
-    </section>
+  <section id="screen-memorial" class="screen" hidden>
+    <h2>Memorial</h2>
+    <div id="memorial-body"></div>
+  </section>
 
-    <div id="dz-menu" hidden></div>
-  </aside>
+  <section id="screen-chronicle" class="screen" hidden>
+    <h2>Chronicle</h2>
+    <div id="chronicle-body"></div>
+  </section>
 </main>
+
+<div id="descent-overlay" hidden>
+  <div id="descent-head">
+    <strong>DESCENT</strong>
+    <span id="descent-timer">8.0s</span>
+    <span id="descent-wind"></span>
+  </div>
+  <div id="descent-field"></div>
+  <div id="descent-injury" hidden></div>
+  <p class="descent-hint"><strong>DIVE PHASE — steer now:</strong> drag (touch / mouse) or use arrow keys / WASD against the wind.
+  Land on safe, useful ground before the timer ends; avoid water. The landing score affects the mission result.</p>
+  <div class="action-bar"><button id="btn-descent-skip" type="button">Skip the fall — straight to the landing roll ↓</button></div>
+</div>
+
+<nav id="tabbar">
+  <button data-screen="map" type="button">Map</button>
+  <button data-screen="ship" type="button">Ship</button>
+  <button data-screen="crew" type="button">Crew</button>
+  <button data-screen="briefing" type="button">Drop</button>
+  <button data-screen="ground" type="button">Ground</button>
+  <button data-screen="settlement" type="button">Settlement</button>
+  <button data-screen="defense" type="button">Defense</button>
+  <button data-screen="trade" type="button">Trade</button>
+  <button data-screen="training" type="button">Training</button>
+  <button data-screen="memorial" type="button">Memorial</button>
+  <button data-screen="chronicle" type="button">Chronicle</button>
+</nav>
+
+<div id="guide-overlay" hidden>
+  <div id="guide-panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+    <div id="guide-head">
+      <strong id="guide-title">Help / Guide</strong>
+      <button id="btn-guide-close" type="button" class="small">Close ✕</button>
+    </div>
+    <p class="muted">Plain words, no unexplained numbers. Open this at any time from <strong>Help / Guide</strong> or by tapping a HUD number.</p>
+
+    <section data-guide-section="ship">
+      <h3>The Ship Deck — and the heroes in the pods</h3>
+      <ol class="guide-steps">
+        <li><strong>Two layers, one toggle.</strong> The <strong>Map</strong> is the sector below; the <strong>Ship</strong> tab (or ⚓ Ship Deck on the Map) walks you onto the deck — seven spaces: Quarters, Trophy Room, Medbay, Engineering, Comms, Armory, Drop Bay. Tap a station to walk there; on desktop, ←/→ or A/D walk and Enter opens the nearest station.</li>
+        <li><strong>The ship is home.</strong> Stations <strong>upgrade in tiers</strong> for SCRAP, bought at the station — every tier changes how the room looks on the deck, and some change the ship (a bigger tank, a cheaper Medbay, a master Armory bench). The <strong>Trophy Room</strong> hangs what you EARN below: apex skulls, chart fragments, act marks, heroes' keepsakes, rare finds — never bought. Pages from the books (✒) lie on the ground where their subject lives; read them into the <strong>Journal</strong> (Comms, the Quarters nook, or the Map's objective line) — every page a verbatim quote with its source.</li>
+        <li><strong>The pre-drop flow lives on the deck.</strong> Pick target + squad in the Drop Briefing, kit them at the <strong>Armory</strong> station, and muster at the <strong>Drop Bay</strong> — heroes join from there.</li>
+        <li><strong>Heroes sleep in named pods.</strong> Work the Communal silo down to its cryo band and the named pods open: X, Rodger, Magnolia, Tin — people from the books, woken one at a time like any sleeper (same cost, same thaw). Each keeps one station aboard by their sourced role.</li>
+        <li><strong>Heroes ride as EXTRA hands.</strong> They never take a picked diver's seat. A hero rides the first drop after waking <strong>free</strong>, sometimes rides free at campaign beats (their own ground), and can otherwise be <strong>hired for one drop</strong> with INTEL + SCRAP — X costs the most.</li>
+        <li><strong>Heroes don't die (this build).</strong> A lethal hit downs a hero: winched out, into the Medbay, back after a few turns. They can be wounded like anyone — rest them at Medbay.</li>
+      </ol>
+    </section>
+
+    <section data-guide-section="drop">
+      <h3>What happens when you drop?</h3>
+      <ol class="guide-steps">
+        <li><strong>Start aboard the airship.</strong> You command from above the clouds. The airship never lands and never fights; only the divers go down.</li>
+        <li><strong>Choose a tile and a squad.</strong> The Drop Briefing names the mission, shows the threat and wind, and states the cost before you commit.</li>
+        <li><strong>Launch Drop.</strong> Launch spends <strong>2 ship-fuel points</strong> and starts an 8-second descent (skippable — the fall itself is a dice roll against the weather). Steer against the wind and try to land on safe, useful ground — not water.</li>
+        <li><strong>Work on the ground.</strong> The landing is a turn-based battle: each diver has action points to move, fire, throw, and work the site — caches, doors, silo bands, depots. A clearly-labeled skip-battle option resolves the drop with the old dice math instead.</li>
+        <li><strong>Get back and bank the haul.</strong> Survivors send gathered cargo up by balloon; the airship reels it in. Only the delivered amount enters cargo. A costly success can snag a balloon and lose part of the haul. If nobody survives, nothing is banked.</li>
+        <li><strong>Failure has a price.</strong> The ship fuel is spent either way. Failure or catastrophe brings home no yield, and divers may be wounded or killed. Death is permanent. Surviving divers are marked “dropped” and cannot drop again until the next turn.</li>
+      </ol>
+    </section>
+
+    <section data-guide-section="numbers">
+      <h3>Numbers — label, unit, meaning</h3>
+      <table class="guide-table">
+        <tr><th>Display</th><th>What it means</th></tr>
+        <tr><td><strong>Turn</strong> — number of rounds</td><td>One turn is one round of orders and drops. End Turn runs upkeep, world events, and the next turn.</td></tr>
+        <tr><td><strong>SCRAP</strong> — resource units in cargo</td><td>Building material. Spend it on structures, training, founding, and trades.</td></tr>
+        <tr><td><strong>FUEL</strong> — resource units in cargo</td><td>Fuel stored as cargo. It is not in the ship tank until you choose Refuel on the Crew screen.</td></tr>
+        <tr><td><strong>FOOD</strong> — resource units in cargo</td><td>Food eaten at End Turn: 1 unit per living diver, plus 1 unit per 5 settlement residents. It also pays for rest and some trades.</td></tr>
+        <tr><td><strong>INTEL</strong> — information units in cargo</td><td>Knowledge you can spend on recon and some trades. Better recon reveals danger and improves a drop.</td></tr>
+        <tr><td><strong>Ship fuel</strong> — tank points, current / maximum</td><td>The airship’s usable tank. Moving costs 1 point per tile. Each drop costs 2 points. At 0, the ship is grounded — refuel from cargo FUEL on the Map or Crew screen.</td></tr>
+        <tr><td><strong>Cargo</strong> — resource units, current / 100 maximum</td><td>SCRAP + FUEL + FOOD + INTEL share this hold. A delivered haul cannot bank beyond the room left.</td></tr>
+        <tr><td><strong>Crew</strong> — living divers / 10 maximum</td><td>How many living divers you have and how many the airship can carry.</td></tr>
+        <tr><td><strong>Threat</strong> — rating 0–5</td><td>How dangerous a tile is. 0 is safest; 5 is the worst ground. Each threat point subtracts 8 from the drop outcome score.</td></tr>
+        <tr><td><strong>Recon</strong> — tier 0–3</td><td>How well a tile has been scouted. Tier 0 adds 0 outcome points; tier 1 adds 5; tier 2 adds 10; tier 3 adds 15 and reveals more danger.</td></tr>
+        <tr><td><strong>LAND</strong> — landing score 0–100 points</td><td>How close the squad lands to the best reachable tile. It converts to −20 through +20 outcome points.</td></tr>
+        <tr><td><strong>Outcome</strong> — result score in points</td><td>95+ Flawless; 70–94 Success; 45–69 Costly success; 25–44 Failure; below 25 Catastrophe.</td></tr>
+        <tr><td><strong>GRIT / AIM / NERVE / HAUL</strong> — stat points 1–10</td><td>GRIT is toughness and survival saves. AIM is fighting skill. NERVE is composure under pressure. HAUL is carrying skill and raises gathered yield. GRIT and AIM drive the squad score.</td></tr>
+        <tr><td><strong>XP / Level / Drops / Wounds</strong></td><td>XP is experience points. Level is diver rank. Drops is completed missions. Wounds is injury count; wounded divers cannot drop.</td></tr>
+      </table>
+    </section>
+
+    <section data-guide-section="tiles">
+      <h3>Tiles — what the marks mean</h3>
+      <div class="tile-legend">
+        <p><i class="key-swatch fog">?</i> <strong>Fog / unknown</strong> — not scouted yet. Move near it or buy recon.</p>
+        <p><i class="key-swatch open">●</i> <strong>Open</strong> — clearest landing ground.</p>
+        <p><i class="key-swatch rough">▲</i> <strong>Rough</strong> — broken ground; harder landing.</p>
+        <p><i class="key-swatch ruin">▦</i> <strong>Ruin</strong> — old structures; rough landing and often scrap or danger.</p>
+        <p><i class="key-swatch water">≈</i> <strong>Water</strong> — cannot land here; a water landing scores LAND 0.</p>
+        <p><i class="key-swatch green">G</i> <strong>Green Zone</strong> — safe ground where the settlement can be founded.</p>
+        <p><i class="key-swatch colony">⌂</i> <strong>Colony</strong> — Kestrel Colony, your on-map trade partner.</p>
+        <p><i class="key-swatch supply">$</i> <strong>Supply cache</strong> — a rich haul under dangerous ground.</p>
+        <p><i class="key-swatch robot">⚠</i> <strong>Robot ruin</strong> — rich pre-Burn tech guarded by machines; the most dangerous site type.</p>
+        <p><i class="key-swatch interdiction">✕</i> <strong>Hostile cache</strong> — raid it by interdiction drop; expect retaliation.</p>
+        <p><strong>SCRAP / FUEL / INTEL node</strong> — a gatherable resource shown by name on the tile. <strong>T0–T5</strong> is the threat rating.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="first-drop-overlay" hidden>
+  <div id="first-drop-panel" role="dialog" aria-modal="true" aria-labelledby="first-drop-title">
+    <p class="eyebrow">Your first drop</p>
+    <h2 id="first-drop-title">Before the squad leaves the airship</h2>
+    <ol class="guide-steps">
+      <li><strong>You stay aboard.</strong> The selected divers descend; the airship waits above the clouds.</li>
+      <li><strong>Steer for 8 seconds.</strong> Wind pushes the marker. Land on safe, useful ground and avoid water.</li>
+      <li><strong>The squad works the tile.</strong> Skill, landing, recon, dice, and threat decide whether they gather, get hurt, or worse.</li>
+      <li><strong>Survivors balloon the haul up.</strong> Only what reaches the airship is banked in cargo.</li>
+      <li><strong>A bad drop costs.</strong> The fuel is gone, failure brings no yield, and wounds or permanent death are possible.</li>
+    </ol>
+    <div class="action-bar">
+      <button id="btn-first-drop-back" type="button">Not yet — back to briefing</button>
+      <button id="btn-first-drop-start" type="button" class="primary">Start the descent</button>
+    </div>
+  </div>
+</div>
+
+<div id="feedback-overlay" hidden>
+  <div id="feedback-panel" role="dialog" aria-label="Playtest feedback">
+    <div id="feedback-head">
+      <strong>Playtest Feedback</strong>
+      <button id="btn-feedback-close" type="button" class="small">Close ✕</button>
+    </div>
+    <p class="muted fb-note">Threaded comments for playtest notes — post a note, reply in the thread.
+    Stored in <em>this browser only</em> for now: use Copy all / Download to pull feedback out of a
+    browser that has it. It moves to a shared store when the game is hosted.</p>
+    <div class="panel fb-form">
+      <label class="fb-author-label">Name / handle
+        <input type="text" id="fb-author" maxlength="40" placeholder="e.g. Steve" autocomplete="nickname">
+      </label>
+      <textarea id="fb-text" rows="3" maxlength="4000" placeholder="What happened? What felt off? What should change?"></textarea>
+      <div class="fb-form-actions">
+        <button id="btn-fb-post" type="button" class="primary">Post Feedback</button>
+        <button id="btn-fb-copy" type="button" class="small">Copy all as text</button>
+        <button id="btn-fb-download" type="button" class="small">Download JSON</button>
+        <span id="fb-status" class="muted"></span>
+      </div>
+    </div>
+    <div id="feedback-list"></div>
+  </div>
+</div>
+
+<div id="intro-overlay" hidden>
+  <div id="intro-panel" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+    <p class="eyebrow">Swamp Shell Industries presents</p>
+    <h1 id="intro-title">DROP ZONE</h1>
+    <p class="intro-pitch">An airship, a squad of divers, and a drowned world full of things that were people.</p>
+    <p><strong>What it is:</strong> a turn-based drop-and-fight game. You command the ship; your divers go down.</p>
+    <ol class="guide-steps">
+      <li><strong>Move the airship</strong> over the sector map (1 fuel per tile) and pick a drop site.</li>
+      <li><strong>Brief and kit the squad</strong> — the Armory step sets weapons, armor and grenades before anyone jumps.</li>
+      <li><strong>Drop.</strong> Steer the descent (or skip it) — then fight the landing as a turn-based ground battle: move, fire, throw, work the site.</li>
+      <li><strong>Extract.</strong> Survivors balloon the haul home; everything found banks into the ship Armory.</li>
+      <li><strong>The campaign:</strong> gather the four chart fragments and find the Cazadores islands before the green fuel runs out.</li>
+    </ol>
+    <div class="action-bar">
+      <button id="btn-intro-new" type="button">Start — new campaign</button>
+      <button id="btn-intro-continue" type="button" class="primary">Continue</button>
+    </div>
+    <p class="muted">Continue always works — a saved campaign is never trapped behind this screen. Sound on, headphones optional.</p>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
 <script src="core.js"></script>
-<script src="encounters.js"></script>
-<script src="weather.js"></script>
+<script src="assets/poi-atlas.js"></script>
 <script src="portraits.js"></script>
-<script src="next.js"></script>
+<script src="weapons.js"></script>
+<script src="ground.js"></script>
+<script src="sfx.js"></script>
+<script src="ui.js"></script>
+<script src="feedback.js"></script>
 </body>
 </html>

@@ -1,0 +1,741 @@
+/* DROP ZONE slice — mobile-first portrait skin. Pure CSS, no assets. */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; overscroll-behavior: none; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #14181d; color: #e8e4d8; font-size: 15px;
+  min-height: 100dvh;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); /* room for tab bar + home indicator */
+}
+button {
+  background: #2b3540; color: #e8e4d8; border: 1px solid #4a5866; border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; cursor: pointer; min-height: 40px;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: #711b19; border-color: #bf4e4e; font-weight: 700; }
+button.small { padding: 5px 8px; min-height: 30px; font-size: 12px; }
+h2 { margin: 10px 0 6px; font-size: 19px; letter-spacing: 0.04em; }
+h3 { margin: 12px 0 4px; font-size: 16px; }
+
+#hud {
+  position: sticky; top: 0; z-index: 20; background: #1d242c; border-bottom: 2px solid #711b19;
+  padding: 8px 10px;
+}
+.hud-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 4px; }
+.game-title { color: #daca47; letter-spacing: 0.12em; }
+.chip { background: #2b3540; border-radius: 12px; padding: 2px 9px; font-size: 13px; }
+.chip b { color: #daca47; }
+.chip.hud-stat { min-height: 28px; border-color: #4a5866; text-align: left; }
+.chip .unit { color: #c9c2ae; font-size: 11px; white-space: nowrap; }
+.hud-turn-stat { cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+.hud-turn-stat:focus-visible, .chip.hud-stat:focus-visible { outline: 2px solid #daca47; outline-offset: 2px; }
+#hud-banner { background: #711b19; padding: 6px 8px; border-radius: 6px; margin-top: 4px; }
+#phase-banner {
+  background: #25313a; border: 1px solid #4a5866; border-left: 5px solid #daca47;
+  border-radius: 6px; color: #e8e4d8; margin-top: 6px; padding: 7px 9px; font-size: 13.5px; line-height: 1.4;
+}
+#phase-banner strong { color: #daca47; }
+.hud-actions button, .import-label { font-size: 12px; padding: 5px 8px; min-height: 28px; }
+.import-label { background: #2b3540; border: 1px solid #4a5866; border-radius: 8px; cursor: pointer; }
+
+main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
+.panel { background: #1d242c; border: 1px solid #38434e; border-radius: 10px; padding: 10px; margin: 8px 0; }
+.howto { background: #1d242c; border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
+
+.action-bar {
+  position: sticky; bottom: 64px; display: flex; gap: 8px; flex-wrap: wrap;
+  background: rgba(20,24,29,0.95); padding: 8px 0; margin-top: 8px;
+}
+.action-bar button { flex: 1 1 30%; }
+
+/* Map scene — the sector chart sits in open water; the sand frame is the island's shore. */
+#map-scene {
+  position: relative; overflow: hidden; touch-action: none;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 118%, rgba(111,163,196,0.35), rgba(111,163,196,0) 60%),
+    repeating-linear-gradient(178deg, rgba(207,230,245,0.05) 0 2px, rgba(207,230,245,0) 2px 26px),
+    linear-gradient(180deg, #274b66 0%, #1d3a52 55%, #16304a 100%);
+  border: 1px solid #33597a; border-radius: 12px; padding: 8px 10px 12px; margin-bottom: 8px;
+}
+#ship-strip, #map-frame { position: relative; z-index: 2; }
+.cloud-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cloud-layer-back { z-index: 0; opacity: 0.55; }
+.cloud-layer-front { z-index: 4; opacity: 0.28; }
+.cloud-mass, .cloud-wisp {
+  position: absolute; display: block; border-radius: 999px;
+  background:
+    radial-gradient(ellipse 38% 55% at 28% 55%, rgba(255,255,255,0.95) 0 38%, rgba(255,255,255,0) 70%),
+    radial-gradient(ellipse 45% 65% at 58% 42%, rgba(245,249,252,0.95) 0 42%, rgba(245,249,252,0) 72%),
+    radial-gradient(ellipse 34% 50% at 78% 58%, rgba(225,236,244,0.9) 0 40%, rgba(225,236,244,0) 70%);
+  filter: blur(5px);
+}
+.cloud-mass { width: 190px; height: 58px; animation: cloud-drift 52s linear infinite alternate; }
+.cloud-back-1 { left: -55px; top: 18px; transform: scale(0.8); animation-duration: 64s; }
+.cloud-back-2 { left: 48%; top: 6px; transform: scale(1.1); animation-duration: 76s; animation-delay: -28s; }
+.cloud-back-3 { left: 12%; bottom: 22px; transform: scale(0.65); animation-duration: 58s; animation-delay: -12s; }
+.cloud-back-4 { right: -70px; bottom: 64px; transform: scale(0.9); animation-duration: 70s; animation-delay: -40s; }
+.cloud-wisp { width: 240px; height: 34px; filter: blur(8px); animation: cloud-cross 34s linear infinite; }
+.cloud-front-1 { left: -260px; top: 18%; --cloud-scale: 1; animation-delay: -8s; }
+.cloud-front-2 { left: -300px; top: 58%; --cloud-scale: 0.75; animation-duration: 43s; animation-delay: -25s; }
+.cloud-front-3 { left: -220px; top: 83%; --cloud-scale: 1.15; animation-duration: 49s; animation-delay: -36s; }
+@keyframes cloud-drift { from { margin-left: -14px; } to { margin-left: 26px; } }
+@keyframes cloud-cross { from { transform: translateX(0) scale(var(--cloud-scale, 1)); } to { transform: translateX(calc(100vw + 320px)) scale(var(--cloud-scale, 1)); } }
+/* Camera hint (2026-11-10): the ruled controls, stated on the map itself. */
+.map-hint { font-size: 12.5px; line-height: 1.45; color: #c9d4de; margin: 6px 2px 0; max-width: 92%; }
+/* Right padding keeps the caption clear of the zoom cluster, which
+   overlays the scene's top-right corner (2026-11-10 polish). */
+#ship-strip { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 202px 4px 2px; }
+#blimp { flex: 0 0 auto; animation: blimp-bob 4.5s ease-in-out infinite alternate; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.45)); }
+@keyframes blimp-bob { from { transform: translateY(-2px); } to { transform: translateY(3px); } }
+#ship-caption { color: #cfe6f5; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+#map-frame {
+  position: relative; overflow: hidden;
+  background: linear-gradient(160deg, #d8c48a, #b39b5e 70%, #9a8148);
+  padding: 5px; border-radius: 10px;
+  box-shadow: inset 0 0 0 2px rgba(90,72,32,0.55), inset 0 2px 7px rgba(255,244,200,0.5), 0 3px 10px rgba(0,0,0,0.5);
+}
+/* Old-world cityscape on the horizon (2026-11-07): the rendered skyline
+   strip from the same Blender kit as the POIs — backdrop only; drops
+   happen in small towns, never in the city ruins. */
+#map-scene::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 58px; z-index: 0;
+  background: url('assets/skyline.png') repeat-x center bottom / auto 100%;
+  opacity: 0.5; filter: brightness(0.75) saturate(0.7); pointer-events: none;
+}
+/* On-map airship marker — floats above the airship's cell, tethered to
+   it. Top-down (2026-11-12): the board lies flat, so the marker needs
+   no counter-rotation (the 3/4 build rotated it -55deg to stand it
+   upright on the tilted plane). */
+#ship-marker {
+  position: absolute; z-index: 6; pointer-events: none; text-align: center;
+  transform: translate(-50%, -100%); transform-origin: 50% 100%;
+  animation: ship-bob 4.5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,0.55));
+}
+@keyframes ship-bob {
+  from { transform: translate(-50%, -100%) translateY(-2px); }
+  to { transform: translate(-50%, -100%) translateY(3px); }
+}
+#ship-marker .ship-tether {
+  width: 0; height: 9px; margin: 1px auto 0; border-left: 2px dashed rgba(218,202,71,0.85);
+}
+
+/* Map board + hex grid (2026-11-07: the live map is a HEX field —
+   pointy-top hexagons in offset rows. 2026-11-12: the board is FLAT —
+   top-down, no CSS perspective, no preserve-3d (the 3/4 plane from the
+   2026-11-10 camera fix is retired: it did not work at this scale on
+   a phone, and the 3D compositing was the pan/zoom lag). The board
+   sits centered in #map-viewport and carries ONE camera transform set
+   only by ui.js applyCam(): translate(-50%,-50%) + pan + rotateX(0deg)
+   + scale. Selection NEVER writes this transform (that was the
+   click-moves-map bug). The grid, POI layer, apex layer and ship
+   marker all share the board's coordinate space so they scale
+   together. Flat 2D transforms composite on the GPU cheaply — that is
+   the point. */
+#map-viewport {
+  position: relative; overflow: hidden; border-radius: 6px;
+  height: clamp(330px, 62dvh, 560px);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 118%, rgba(111,163,196,0.30), rgba(111,163,196,0) 60%),
+    linear-gradient(180deg, #22425e 0%, #1a324a 60%, #132539 100%);
+  touch-action: none;
+}
+#map-board {
+  position: absolute; left: 50%; top: 50%; width: min(97%, 660px);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+#map-grid {
+  position: relative; background: #0c0f12; border-radius: 6px; touch-action: none;
+}
+.pick-probe {
+  position: absolute; width: 2px; height: 2px; margin: -1px 0 0 -1px;
+  pointer-events: none; opacity: 0; z-index: 0;
+}
+.cell {
+  position: absolute; aspect-ratio: 0.8660254; line-height: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; color: #0c0f12; font-weight: 800; padding: 0; min-height: 0;
+  border: none; overflow: hidden; gap: 0;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.cell .tile-icon {
+  display: block; font-size: 8px; line-height: 0.95; font-weight: 900;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35), 0 0 3px rgba(255,255,255,0.25);
+}
+.cell .tile-label {
+  display: block; max-width: 100%; font-size: 5px; line-height: 1; letter-spacing: -0.045em;
+  white-space: nowrap; text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+}
+.cell.fog { background: radial-gradient(circle at 50% 38%, #2e3742, #1f252d 78%); color: #aab4bf; }
+.cell.open { background: radial-gradient(circle at 50% 42%, #a4bd77 0 22%, #7d9a52 58%, #637d3e); }
+.cell.rough {
+  background:
+    repeating-linear-gradient(135deg, rgba(70,55,25,0.22) 0 2px, rgba(255,255,255,0) 2px 5px),
+    linear-gradient(155deg, #b39d6b, #8a7648);
+}
+.cell.ruin {
+  background:
+    repeating-linear-gradient(0deg, rgba(35,30,25,0.2) 0 1px, rgba(255,255,255,0) 1px 5px),
+    repeating-linear-gradient(90deg, rgba(35,30,25,0.14) 0 1px, rgba(255,255,255,0) 1px 7px),
+    linear-gradient(155deg, #968a7c, #786d60);
+}
+.cell.water {
+  background:
+    repeating-linear-gradient(178deg, rgba(207,230,245,0.16) 0 2px, rgba(207,230,245,0) 2px 7px),
+    linear-gradient(180deg, #4a7ba0, #2f5676);
+  color: #eaf6ff;
+}
+.cell.water.shore { background: linear-gradient(180deg, #7fb0cd, #4a7ba0); } /* shallows at the beach edge */
+.cell.coast { box-shadow: inset 0 0 0 2px rgba(216,196,138,0.9); } /* sand rim where land meets water */
+.cell.green { box-shadow: inset 0 0 0 3px #7fe07f; }
+.cell.green .tile-icon { background: #eaffea; border-radius: 50%; padding: 0 1px; }
+.cell.colony { background: radial-gradient(circle at 50% 38%, #f3e58a, #daca47 68%); }
+.cell.interdiction {
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.12) 0 2px, rgba(255,255,255,0) 2px 6px),
+    #bf4e4e;
+  color: #fff;
+}
+.cell.supply { background: radial-gradient(circle at 50% 38%, #f0d76a, #a8873a 72%); } /* rich cache — gold */
+.cell.supply .tile-label, .cell.colony .tile-label { background: rgba(255,248,190,0.88); padding: 0 1px; }
+.cell.robot {
+  background:
+    repeating-linear-gradient(135deg, rgba(255,68,68,0.13) 0 3px, rgba(255,255,255,0) 3px 7px),
+    linear-gradient(155deg, #5a6a76, #38434e);
+  color: #ff8888; box-shadow: inset 0 0 0 2px #ff4444;
+} /* machine ruin — steel + red */
+.cell.robot .tile-label { background: #171d23; color: #ffb0b0; padding: 0 1px; }
+.cell.resource .tile-label { background: rgba(232,228,216,0.9); padding: 0 1px; }
+.cell.ship { box-shadow: inset 0 0 0 2px #fff; }
+.cell .threat { font-size: 7px; color: #711b19; }
+/* Radiation wash (live map): the hex glows with its ground's radiation —
+   amber to red as it climbs; radsoft is the halo a hot POI throws onto
+   its neighbor hexes, so hot ground reads as a glowing patch. */
+.cell.radsoft { box-shadow: inset 0 0 6px 2px rgba(224,168,60,0.20); }
+/* Zone-tier act tinting (2026-11-10): an inset wash under the rad pips —
+   green = the fuel-cell years, yellow = the buried ITC world, red = the
+   stored ship. Reads as the campaign chapter at a glance. */
+.cell.zone-green { box-shadow: inset 0 0 0 3px rgba(111, 194, 111, 0.35); }
+.cell.zone-yellow { box-shadow: inset 0 0 0 3px rgba(224, 168, 60, 0.55); }
+.cell.zone-red { box-shadow: inset 0 0 0 3px rgba(200, 60, 47, 0.6); }
+.cell.zone-green.poi { box-shadow: inset 0 0 0 3px rgba(111, 194, 111, 0.35), inset 0 0 10px rgba(255, 255, 255, 0.18); }
+.cell.zone-yellow.poi { box-shadow: inset 0 0 0 3px rgba(224, 168, 60, 0.55), inset 0 0 10px rgba(255, 255, 255, 0.18); }
+.cell.zone-red.poi { box-shadow: inset 0 0 0 3px rgba(200, 60, 47, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.18); }
+.campaign-strip { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); line-height: 1.7; }
+.reveal-panel { border-color: var(--warn); background: #2b2113; }
+.reveal-panel h3 { color: var(--warn); }
+.cell.rad1 { box-shadow: inset 0 0 7px 3px rgba(224,168,60,0.42); }
+.cell.rad2 { box-shadow: inset 0 0 8px 4px rgba(224,120,40,0.58); }
+.cell.rad3 { box-shadow: inset 0 0 9px 5px rgba(208,70,40,0.68); }
+.cell.rad4 { box-shadow: inset 0 0 10px 6px rgba(255,42,26,0.78); }
+/* Town street + rubble field dressing (old-world fabric around POIs). */
+.cell.street { background: linear-gradient(165deg, #5a544c, #443e37); }
+.cell.rubble::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.55;
+  background-image:
+    radial-gradient(circle 1.6px at 30% 62%, rgba(40,34,26,0.8) 98%, transparent),
+    radial-gradient(circle 1.2px at 64% 40%, rgba(40,34,26,0.7) 98%, transparent),
+    radial-gradient(circle 1.4px at 48% 78%, rgba(232,222,196,0.5) 98%, transparent),
+    radial-gradient(circle 1px at 76% 68%, rgba(40,34,26,0.7) 98%, transparent);
+}
+.cell.route { box-shadow: inset 0 0 0 2px rgba(218,202,71,0.8); }
+.cell.choked { box-shadow: inset 0 0 0 2px #ff2222; }
+.cell.selected { box-shadow: inset 0 0 0 2px #daca47; filter: drop-shadow(0 0 4px rgba(218,202,71,0.95)); z-index: 3; }
+
+/* POI sprites: FAR markers ride inside their hex; NEAR modeled sprites
+   ride the overlay layer. Tier crossfades on the board class. */
+.poi-far {
+  display: block; width: 100%; height: 66%; pointer-events: none;
+  background-image: url('assets/poi-atlas.png'); background-repeat: no-repeat;
+  transition: opacity 0.3s ease;
+}
+#map-board.tier-near .poi-far { opacity: 0; }
+.poi-far.worked, .poi-sprite.worked { opacity: 0.5; filter: grayscale(0.55); }
+.poi-far.occupied { filter: drop-shadow(0 0 3px rgba(255,60,40,0.95)); }
+.poi-far.locked, .poi-sprite.locked { filter: grayscale(1) brightness(0.78); }
+#poi-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+#map-board.tier-near #poi-layer { opacity: 1; }
+.poi-sprite {
+  position: absolute; pointer-events: none;
+  background-image: url('assets/poi-atlas.png'); background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
+  /* Flat on the top-down board: ui.js sets the per-sprite transform
+     (translate to the hex's ground anchor, then rotateX(0deg) — the
+     tilt knob) and the matching transform-origin at the anchor. */
+}
+.poi-sprite.occupied { filter: drop-shadow(0 0 6px rgba(255,60,40,0.6)); }
+/* Apex markers: shown by default, over fog, at every zoom. */
+#apex-layer { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.apex-marker {
+  position: absolute; width: 30px; height: 32px;
+  transform: translate(-50%, -94%); transform-origin: 50% 100%;
+  cursor: pointer; pointer-events: auto; background: none; border: none; padding: 0;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.65));
+}
+#map-board.tier-near .apex-marker { width: 38px; height: 40px; }
+.apex-marker svg { width: 100%; height: 100%; display: block; }
+#apex-card {
+  position: absolute; z-index: 9; width: 216px; pointer-events: none;
+  background: rgba(16,20,25,0.96); border: 1px solid #bf4e4e; border-radius: 8px;
+  padding: 8px 10px; color: #e8e2d2; font-size: 12px; line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+}
+#apex-card .apex-title { color: #ff6a4d; font-weight: 800; letter-spacing: 0.05em; }
+/* World map (2026-11-12): the whole chart in the viewport's bottom-left
+   corner. Canvas carries terrain/fog/ship/selection (drawn by ui.js);
+   #world-rect is the framed-area rectangle, positioned by ui.js on
+   every camera write. The element owns its touches so a tap or drag
+   on it can never pan the main map or scroll the page. */
+#world-map {
+  position: absolute; left: 10px; bottom: 10px; z-index: 7;
+  width: 116px; height: 116px; border: 1px solid #4a5866; border-radius: 6px;
+  background: #10151b; overflow: hidden; cursor: pointer; touch-action: none;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+#world-map:focus-visible { outline: 2px solid #daca47; outline-offset: 2px; }
+#world-canvas { display: block; width: 100%; height: 100%; }
+#world-rect {
+  position: absolute; border: 1.5px solid #daca47; border-radius: 2px;
+  background: rgba(218,202,71,0.10); pointer-events: none;
+}
+#world-map .world-tag {
+  position: absolute; right: 4px; bottom: 2px; font-size: 8.5px; font-weight: 800;
+  letter-spacing: 0.14em; color: rgba(232,228,216,0.75); pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+}
+/* Zoom controls — >=44px touch targets (mobile-first, 2026-11-10). */
+.map-zoom { position: absolute; right: 12px; top: 10px; z-index: 8; display: flex; gap: 4px; align-items: center; }
+.map-zoom button {
+  width: 44px; height: 44px; border-radius: 7px; border: 1px solid #38434e;
+  background: rgba(20,26,32,0.9); color: #e8e2d2; font-size: 16px; font-weight: 800;
+  cursor: pointer; line-height: 1; padding: 0;
+}
+.map-zoom button:active { transform: translateY(1px); background: #26313c; }
+#zoom-level {
+  min-width: 46px; text-align: center; color: #daca47; font-size: 13px; font-weight: 800;
+  background: rgba(20,26,32,0.85); border: 1px solid #38434e; border-radius: 7px; padding: 4px 2px;
+}
+/* Meters for radiation + the ENDGAME gate */
+.radmeter { display: inline-flex; gap: 2px; vertical-align: middle; margin: 0 2px; }
+.radmeter i { width: 13px; height: 7px; border-radius: 2px; background: #2b3238; display: block; }
+.radmeter i.on1 { background: #d9a441; } .radmeter i.on2 { background: #d97b2f; }
+.radmeter i.on3 { background: #cf4b32; } .radmeter i.on4 { background: #ff2a1a; }
+.gatepips { display: inline-flex; gap: 3px; vertical-align: middle; margin: 0 2px; }
+.gatepips i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #daca47; display: block; box-sizing: border-box; }
+.gatepips i.on { background: #daca47; }
+.gatepips i.half { background: linear-gradient(180deg, #daca47 45%, transparent 45%); }
+.endgame-tag { color: #ff5a3c; letter-spacing: 0.09em; font-weight: 800; }
+.gate-gauge { display: inline-block; width: 130px; vertical-align: middle; margin: 0 4px; }
+.poi-swatch { background: linear-gradient(180deg, #8d8071 55%, #4c443a 55%); border: 1px solid #2b3238; }
+.rad-swatch { background: radial-gradient(circle at 50% 50%, #ff2a1a, #d97b2f 60%, #3a3f2a); border: 1px solid #2b3238; }
+.apex-key { color: #ff3b26; font-weight: 900; font-size: 14px; }
+
+#map-key {
+  display: flex; flex-wrap: wrap; gap: 5px 9px; align-items: center;
+  background: #1d242c; border: 1px solid #38434e; border-radius: 8px;
+  padding: 7px 9px; margin: 7px 0; font-size: 12px;
+}
+#map-key > span { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+.key-swatch {
+  display: inline-flex; align-items: center; justify-content: center; font-style: normal;
+  width: 19px; height: 19px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.55);
+  color: #10151a; font-size: 12px; font-weight: 900; flex: 0 0 auto;
+}
+.key-swatch.fog { background: #2e3742; color: #aab4bf; }
+.key-swatch.open { background: #7d9a52; }
+.key-swatch.rough { background: #a89468; }
+.key-swatch.ruin { background: #968a7c; }
+.key-swatch.water { background: #4a7ba0; color: #eaf6ff; }
+.key-swatch.green { background: #79c96f; outline: 2px solid #b9ffb0; outline-offset: -3px; }
+.key-swatch.colony { background: #daca47; }
+.key-swatch.supply { background: #d8b84a; }
+.key-swatch.robot { background: #38434e; color: #ff6666; border-color: #ff4444; }
+.key-swatch.interdiction { background: #bf4e4e; color: #fff; }
+
+/* Cards */
+.card { background: #1d242c; border: 1px solid #38434e; border-radius: 10px; padding: 10px; margin: 8px 0; }
+.card.dead { opacity: 0.55; }
+.statgrid { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.statgrid .chip b { color: #e8e4d8; }
+.tag { background: #38434e; border-radius: 8px; padding: 1px 7px; font-size: 12px; }
+.band { font-size: 22px; font-weight: 800; letter-spacing: 0.03em; }
+.band.Flawless { color: #daca47; } .band.Success { color: #7fe07f; }
+.band.Costly { color: #e0a33e; } .band.Failure { color: #e0683e; } .band.Catastrophe { color: #ff4444; }
+.proj-favorable { color: #7fe07f; font-weight: 700; }
+.proj-risky { color: #e0a33e; font-weight: 700; }
+.proj-suicidal { color: #ff4444; font-weight: 700; }
+.proj-num { font-weight: 700; }
+
+/* Squad rows / stat bars / pool gauge / risk meter (2026-11-07) */
+label.pick.squad-row {
+  padding: 10px 10px 8px; cursor: pointer; border: 1px solid #38434e;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+label.pick.squad-row:active { background: #2b3540; }
+label.pick.squad-row.on { background: #26313c; border-color: #daca47; box-shadow: inset 3px 0 0 #daca47; }
+.squad-head { display: flex; align-items: center; gap: 8px; }
+.squad-head input[type="checkbox"] { width: 20px; height: 20px; accent-color: #daca47; flex: none; margin: 0; cursor: pointer; }
+.squad-name { font-weight: 700; }
+.squad-val { margin-left: auto; font-weight: 700; color: #daca47; white-space: nowrap; }
+.statbars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 7px 0 5px; }
+.sbar i { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.09em; color: #9aa5ae; margin-bottom: 2px; }
+.sbar b { display: block; height: 6px; background: #141a20; border-radius: 3px; overflow: hidden; }
+.sbar u { display: block; height: 100%; background: #daca47; opacity: 0.85; text-decoration: none; border-radius: 3px; transition: width 0.3s ease; }
+.gear-line { display: block; font-size: 12px; color: #9aa5ae; }
+.gear-line .gw { color: #e8e4d8; font-weight: 700; }
+.gear-line .fx { color: #e0a33e; font-style: italic; }
+.pool-head { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.09em; margin-bottom: 6px; }
+.pool-num { color: #daca47; font-weight: 700; letter-spacing: 0; }
+.gauge { height: 12px; background: #141a20; border-radius: 6px; overflow: hidden; }
+.gauge-fill { height: 100%; background: linear-gradient(90deg, #711b19, #bf4e4e, #daca47); border-radius: 6px; transition: width 0.45s ease; }
+.riskmeter { position: relative; height: 14px; border-radius: 7px; overflow: hidden; display: flex; margin-top: 8px; background: #141a20; }
+.rmz { display: block; height: 100%; }
+.rmz-red { width: 35%; background: #8c2f26; }
+.rmz-amber { width: 30%; background: #9c7422; }
+.rmz-green { width: 35%; background: #3d7a35; }
+.rm-tick { position: absolute; left: 70%; top: 0; width: 2px; height: 100%; background: rgba(232, 228, 216, 0.9); }
+.rm-marker { position: absolute; top: 0; left: 0; width: 4px; height: 100%; margin-left: -2px; background: #ffffff; border-radius: 2px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.85); transition: left 0.45s ease; }
+.rm-ticklabel { position: relative; height: 13px; font-size: 10px; color: #9aa5ae; margin-top: 2px; }
+.rm-ticklabel span { position: absolute; left: 70%; transform: translateX(-50%); }
+table.breakdown { border-collapse: collapse; width: 100%; margin: 6px 0; }
+table.breakdown td, table.breakdown th { border: 1px solid #38434e; padding: 4px 7px; text-align: left; font-size: 13px; }
+.lines { white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+.muted { color: #9aa5ae; } .warn { color: #e0a33e; } .bad { color: #ff6666; }
+.wave { border-left: 4px solid #bf4e4e; padding: 6px 10px; margin: 6px 0; background: #1d242c; border-radius: 0 8px 8px 0; }
+.tombstone { border-left: 4px solid #9aa5ae; }
+
+/* Tab bar */
+#tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; overflow-x: auto;
+  background: #1d242c; border-top: 2px solid #711b19;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+#tabbar button { flex: 1 0 auto; border: none; border-radius: 0; background: transparent; font-size: 12px; padding: 8px 7px; }
+#tabbar button.active { background: #711b19; color: #fff; }
+
+/* Descent overlay */
+#descent-overlay {
+  position: fixed; inset: 0; z-index: 50; background: #0c0f12; display: flex; flex-direction: column;
+}
+#descent-overlay[hidden] { display: none; }
+#descent-head { display: flex; gap: 14px; padding: 12px; align-items: center; color: #daca47; }
+#descent-field { position: relative; flex: 1; margin: 0 10px; background: #18202a; border: 1px solid #38434e; overflow: hidden; touch-action: none; }
+.dtile { position: absolute; border: 1px solid rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.65); }
+.dtile.open { background: #7d8f5a; } .dtile.rough { background: #9a8a5e; }
+.dtile.ruin { background: #8a7f74; } .dtile.water { background: #3d6a8a; }
+.dtile.hazard { box-shadow: inset 0 0 0 2px #ff4444; }
+.dtile.best { box-shadow: inset 0 0 0 3px #daca47; }
+.dtile.target { box-shadow: inset 0 0 0 2px #ffffff; }
+#descent-marker {
+  position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: #daca47; border: 3px solid #711b19; z-index: 5; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; color: #711b19; font-weight: 900; font-size: 13px;
+}
+.descent-hint { padding: 8px 12px; color: #9aa5ae; font-size: 13px; }
+
+#toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 76px; z-index: 60;
+  background: #711b19; color: #fff; padding: 10px 16px; border-radius: 10px; max-width: 92vw; font-size: 14px;
+}
+select, input[type="text"] {
+  background: #2b3540; color: #e8e4d8; border: 1px solid #4a5866; border-radius: 8px; padding: 9px; font-size: 14px;
+}
+
+/* Help / Guide + first-drop explainer */
+.drop-explainer h3 { margin-top: 2px; }
+.drop-explainer summary, .poi-notes summary { cursor: pointer; font-weight: 700; }
+.poi-notes { margin-top: 4px; }
+.guide-steps { margin: 6px 0 8px; padding-left: 22px; line-height: 1.45; }
+.guide-steps li { margin: 5px 0; }
+#guide-overlay, #first-drop-overlay {
+  position: fixed; inset: 0; z-index: 58; background: rgba(6,8,10,0.68);
+  display: flex; justify-content: flex-end;
+}
+#guide-overlay[hidden], #first-drop-overlay[hidden] { display: none; }
+#guide-panel {
+  background: #14181d; width: min(640px, 100%); height: 100%; overflow-y: auto;
+  border-left: 2px solid #711b19; padding: 14px; box-shadow: -6px 0 18px rgba(0,0,0,0.5);
+}
+#guide-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+#guide-head strong { color: #daca47; letter-spacing: 0.06em; font-size: 18px; }
+#guide-panel section { border-top: 1px solid #38434e; margin-top: 14px; padding-top: 4px; }
+.guide-table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 13px; }
+.guide-table th, .guide-table td { border: 1px solid #38434e; padding: 6px 7px; text-align: left; vertical-align: top; }
+.guide-table th { background: #232b33; color: #daca47; }
+.tile-legend p { display: flex; align-items: flex-start; gap: 7px; line-height: 1.4; margin: 7px 0; }
+#first-drop-overlay { z-index: 57; align-items: center; justify-content: center; padding: 14px; }
+#first-drop-panel {
+  background: #14181d; width: min(560px, 100%); max-height: 92vh; overflow-y: auto;
+  border: 2px solid #711b19; border-radius: 12px; padding: 16px; box-shadow: 0 10px 32px rgba(0,0,0,0.6);
+}
+#first-drop-panel h2 { color: #daca47; margin-top: 2px; }
+.eyebrow { color: #bf4e4e; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; margin: 0; text-transform: uppercase; }
+
+/* Feedback overlay — threaded playtest comments (feedback.js) */
+#feedback-overlay {
+  position: fixed; inset: 0; z-index: 55; background: rgba(6,8,10,0.62);
+  display: flex; justify-content: flex-end;
+}
+#feedback-overlay[hidden] { display: none; }
+#feedback-panel {
+  background: #14181d; width: min(580px, 100%); height: 100%; overflow-y: auto;
+  border-left: 2px solid #711b19; padding: 12px; box-shadow: -6px 0 18px rgba(0,0,0,0.5);
+}
+#feedback-head { display: flex; justify-content: space-between; align-items: center; }
+#feedback-head strong { color: #daca47; letter-spacing: 0.08em; font-size: 17px; }
+.fb-note { font-size: 13px; }
+.fb-form textarea, .fb-replybox textarea {
+  width: 100%; background: #2b3540; color: #e8e4d8; border: 1px solid #4a5866;
+  border-radius: 8px; padding: 9px; font-size: 14px; margin: 6px 0; font-family: inherit;
+}
+.fb-author-label { display: block; font-size: 13px; color: #9aa5ae; }
+.fb-author-label input[type="text"] { width: 100%; margin-top: 4px; }
+.fb-form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fb-comment {
+  background: #1d242c; border: 1px solid #38434e; border-left: 3px solid #711b19;
+  border-radius: 10px; padding: 8px 10px; margin: 8px 0;
+}
+.fb-meta { font-size: 12px; color: #9aa5ae; margin-bottom: 3px; }
+.fb-meta b { color: #daca47; font-size: 13px; }
+.fb-text-body { white-space: pre-wrap; font-size: 14px; line-height: 1.45; }
+.fb-actions { margin-top: 5px; }
+.fb-empty { color: #9aa5ae; }
+label.pick { display: block; padding: 7px 8px; background: #232b33; border-radius: 8px; margin: 4px 0; }
+@media (min-width: 700px) {
+  .cell .tile-icon { font-size: 10px; }
+  .cell .tile-label { font-size: 7px; letter-spacing: -0.02em; }
+}
+/* Small phones (iPhone SE floor 375x667): shorter stage, same rules.
+   The ship caption hides here — the zoom cluster needs the strip's
+   width, and the same position/fuel readout lives in the map-info
+   panel directly under the map. */
+@media (max-width: 480px) {
+  #map-viewport { height: clamp(280px, 50dvh, 460px); }
+  #map-board { width: 99%; }
+  #world-map { width: 104px; height: 104px; left: 8px; bottom: 8px; }
+  .map-hint { font-size: 12px; }
+  #ship-strip { padding-right: 2px; }
+  #ship-caption { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #blimp, #ship-marker, .cloud-mass, .cloud-wisp { animation: none !important; }
+}
+
+/* ---- Fix-it-all additions (2026-11-10): thumbnails, armory, ground battle,
+   intro, objective line, feedback motion. Warm Bone palette throughout. ---- */
+.thumb { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #4a5866; vertical-align: middle; background: #2b3540; }
+.thumb-wounded { border-color: #bf4e4e; animation: dz-pulse-red 1.6s ease-in-out infinite; }
+.thumb-dead { filter: grayscale(1); opacity: 0.55; }
+.card-head { display: flex; gap: 8px; align-items: center; }
+.arch-badge { background: #711b19; color: #e8e4d8; border-radius: 10px; padding: 1px 8px; font-size: 11.5px; white-space: nowrap; }
+.wicon { display: inline-block; vertical-align: middle; margin-right: 4px; }
+.wicon svg { display: block; }
+.gear-line { font-size: 13px; }
+.warn-chip { background: #6b5410; color: #ffe9a8; }
+
+#objective-line {
+  background: #25313a; border: 1px solid #4a5866; border-left: 5px solid #daca47;
+  border-radius: 6px; padding: 7px 9px; margin: 6px 0; font-size: 13.5px;
+}
+#objective-line strong { color: #daca47; }
+#grounded-banner { border-radius: 8px; padding: 9px 10px; margin: 6px 0; font-size: 14px; }
+#grounded-banner.grounded { background: #711b19; border: 1px solid #bf4e4e; }
+#grounded-banner.lowfuel { background: #4d3d0a; border: 1px solid #daca47; }
+
+/* Ground battle */
+.ground-wrap { overflow: visible; padding: 46px 0 4px; }
+.ground-grid { display: grid; grid-template-columns: repeat(13, minmax(26px, 1fr)); gap: 2px; max-width: 560px; margin: 0 auto; }
+.gcell {
+  aspect-ratio: 1; min-height: 26px; padding: 0; border-radius: 4px; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; position: relative;
+  background: #33503c; border: 1px solid #22301f; overflow: visible;
+}
+.gcell.rough { background: #4a4436; }
+.gcell.ruin { background: #4c4f44; }
+.gcell.water { background: #274b66; }
+.gcell.fogged { opacity: 0.38; }
+.gcell.mapped { opacity: 0.7; }
+.gcell.burning { box-shadow: inset 0 0 0 2px #daca47, inset 0 0 12px rgba(218,202,71,0.55); }
+/* Rule 27 — FIGURES, not tokens: every unit stands on the field as a
+ * full humanoid figure TWO TILES TALL (~6 ft), feet anchored on its
+ * tile (bottom of the cell), body rising over the tile behind it.
+ * Myth-style grounded presentation; squad = military, hostiles in kind.
+ * DOM order is the painter's order: a southern figure paints over the
+ * tile north of it, exactly like figures standing on real ground. */
+.gfigure {
+  position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%);
+  height: 196%; aspect-ratio: 1 / 2; display: block;
+  pointer-events: none; z-index: 3; line-height: 1;
+}
+.gfigure svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.gfigure .ftag {
+  position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
+  font-size: 8px; font-weight: 800; letter-spacing: .04em; line-height: 1.5;
+  color: #1d242c; background: #daca47; border-radius: 3px; padding: 0 3px;
+  pointer-events: none; white-space: nowrap;
+}
+.gfigure.squad.selected svg { filter: drop-shadow(0 0 5px rgba(218,202,71,.95)) drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.gfigure.squad.selected .ftag { background: #fff3b0; outline: 1.5px solid #e8e4d8; }
+.gfigure.dead { opacity: .55; filter: grayscale(.85); }
+/* Hostile figures stand in a red ground ring (#c1272d — the skull's
+ * red, carried to the field); targeting strengthens the ring + glow. */
+.ghost::after {
+  content: ''; position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
+  width: 82%; height: 8.5%; border-radius: 50%;
+  border: 2px solid #c1272d;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,106,77,.35), rgba(193,39,45,.14) 62%, rgba(193,39,45,0) 78%);
+  box-shadow: 0 0 5px rgba(193,39,45,.45);
+  pointer-events: none;
+}
+.ghost.targeted::after { border-color: #ff3b26; box-shadow: 0 0 9px rgba(255,59,38,.85); }
+.ghost.targeted svg { filter: drop-shadow(0 0 5px rgba(255,59,38,.8)) drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.ghost .htag {
+  position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+  font-size: 6px; font-weight: 800; letter-spacing: .05em; line-height: 1.5;
+  color: #ffd9d2; background: rgba(93,15,19,.94); border-radius: 3px; padding: 0 2px;
+  pointer-events: none; white-space: nowrap; z-index: 4;
+}
+.gcell.reach { box-shadow: inset 0 0 0 2px rgba(218,202,71,.55); }
+.turn-banner {
+  border: 1px solid #38434e; border-left: 4px solid #daca47; border-radius: 8px;
+  background: #1d242c; padding: 7px 10px; margin: 8px 0 0; font-size: 13px; line-height: 1.45;
+}
+.turn-banner.enemy { border-left-color: #ff3b26; }
+.turn-banner.enemy strong { color: #ff6a4d; }
+.ground-outcome { border-left: 4px solid #8fe08f; margin-top: 8px; }
+.hkey { display: flex; gap: 5px; align-items: center; margin-top: 4px; font-size: 11.5px; color: #d8c9c4; }
+.hkey svg { width: 13px; height: 14px; flex: none; }
+.hkey .hkey-fig { display: inline-flex; flex: none; }
+.hkey .hkey-fig svg { width: auto; height: 24px; }
+.hg-melee { color: #ff8a70; } .hg-ranged { color: #daca47; } .hg-flying { color: #a8d8ff; }
+.hg-plant { color: #9be15d; } .hg-machine { color: #ffb37a; } .hg-human { color: #e8e4d8; }
+.gpoi { color: #daca47; font-size: 11px; } .gdrift { color: #ffe9a8; font-size: 11px; } .gsite { color: #ffb37a; font-size: 11px; }
+.unit-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.unit-card {
+  flex: 1 1 46%; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center;
+  text-align: left; padding: 6px 8px; font-size: 12.5px;
+}
+.unit-card.active { border-color: #daca47; box-shadow: 0 0 0 1px #daca47; }
+.unit-card.dead { opacity: 0.55; }
+.unit-card .thumb { width: 36px; height: 36px; }
+.unit-name { font-weight: 700; } .unit-ap { color: #daca47; }
+.unit-wounds { color: #ff8a70; } .unit-light { color: #ffe9a8; }
+.ground-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.ground-actions .gact { flex: 1 1 30%; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.ground-actions .gact.extract { background: #711b19; border-color: #bf4e4e; font-weight: 700; }
+.ground-log { max-height: 260px; overflow-y: auto; }
+.encounter-panel { border-color: #daca47; }
+.encounter-panel.pinned { border: 2px solid #daca47; background: #20261c; box-shadow: 0 4px 14px rgba(0,0,0,.5); margin-top: 8px; }
+.encounter-panel .enc-why { color: #daca47; font-weight: 700; }
+.report-squad { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.report-chip { display: inline-flex; gap: 6px; align-items: center; background: #2b3540; border-radius: 8px; padding: 3px 8px 3px 3px; }
+.report-chip.dead { opacity: 0.6; }
+.report-chip .thumb { width: 32px; height: 32px; }
+
+/* Armory */
+.armory-card .pick, .armory-card label.pick { display: block; margin: 4px 0; }
+.armory-card select { max-width: 100%; }
+.weight-line.over { color: #ff8a70; }
+.grenade-row { font-size: 13px; margin: 4px 0; }
+
+/* Descent + intro overlays */
+#descent-injury { background: #711b19; border: 1px solid #bf4e4e; border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-weight: 700; }
+#intro-overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(10, 12, 14, 0.92);
+  display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 18px 10px;
+}
+#intro-overlay[hidden] { display: none; }
+#intro-panel { background: #1d242c; border: 2px solid #711b19; border-radius: 12px; max-width: 560px; padding: 16px; }
+#intro-panel h1 { color: #daca47; letter-spacing: 0.14em; margin: 2px 0 6px; }
+.intro-pitch { font-size: 16px; }
+.eyebrow { color: #c9c2ae; text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; margin: 0; }
+
+/* Feedback motion (§4): shake + red pulse; all of it dies under reduced motion. */
+@keyframes dz-shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+@keyframes dz-pulse-red { 0%,100% { box-shadow: 0 0 0 0 rgba(191,78,78,0); } 50% { box-shadow: 0 0 0 3px rgba(191,78,78,0.65); } }
+.fx-shake { animation: dz-shake 0.45s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-shake, .thumb-wounded { animation: none !important; }
+}
+
+/* Ship deck (Ship Deck + Heroes, 2026-11-10): the side-scrolling ship.
+   Parallax layers are pure CSS gradients (ship hull + porthole stars);
+   the strip is 2080px of deck, the camera follows the walking avatar. */
+#deck-objective { background: #232a31; border: 1px solid #46525e; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+#deck-viewport { position: relative; overflow: hidden; height: 300px; border: 2px solid #46525e; border-radius: 10px; background: #141a20; }
+#deck-strip { position: absolute; top: 0; left: 0; height: 100%; will-change: transform; }
+.deck-layer { position: absolute; left: 0; width: 100%; pointer-events: none; }
+.deck-stars { top: 0; height: 74px; background:
+  radial-gradient(circle at 40px 22px, #e8e4d8 1.6px, transparent 2.2px),
+  radial-gradient(circle at 190px 48px, #c9c2ae 1.2px, transparent 1.8px),
+  radial-gradient(circle at 330px 16px, #e8e4d8 1.4px, transparent 2px),
+  radial-gradient(circle at 520px 40px, #daca47 1.2px, transparent 1.8px),
+  #0d1420; background-size: 620px 74px; background-repeat: repeat-x; }
+.deck-hull { top: 74px; bottom: 44px; background:
+  repeating-linear-gradient(90deg, rgba(232,228,216,0.05) 0 3px, transparent 3px 172px),
+  linear-gradient(180deg, #2b3540, #232a31 55%, #1d242c); }
+.deck-floor { position: absolute; left: 0; bottom: 0; width: 100%; height: 44px; background:
+  repeating-linear-gradient(90deg, rgba(218,202,71,0.16) 0 2px, transparent 2px 86px),
+  linear-gradient(180deg, #37424e, #232a31); border-top: 2px solid #daca47; pointer-events: none; }
+.deck-station { position: absolute; top: 0; width: 300px; height: 100%; cursor: pointer; }
+.deck-sign { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); background: #1d242c; border: 1px solid #daca47; color: #daca47;
+  border-radius: 6px; padding: 3px 10px; font-weight: 700; letter-spacing: 0.08em; font-size: 13px; white-space: nowrap; }
+.deck-door { position: absolute; top: 118px; left: 50%; transform: translateX(-50%); width: 104px; height: 128px;
+  background: linear-gradient(180deg, #2e3944, #232a31); border: 3px solid #46525e; border-bottom: none; border-radius: 10px 10px 0 0; }
+.deck-station.open .deck-door { border-color: #daca47; background: linear-gradient(180deg, #4a4430, #2e2a1e); }
+.deck-keeper { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px;
+  background: rgba(20,26,32,0.85); border: 1px solid #46525e; border-radius: 8px; padding: 3px 8px 3px 3px; white-space: nowrap; }
+.deck-keeper.empty { color: #8a93a0; font-size: 12px; padding: 5px 9px; }
+.deck-keeper .thumb { width: 36px; height: 36px; }
+.keeper-name { font-weight: 700; color: #e8e4d8; font-size: 13px; }
+#deck-avatar { position: absolute; bottom: 40px; width: 56px; text-align: center; z-index: 3; pointer-events: none; }
+#deck-avatar .thumb { width: 52px; height: 52px; border: 2px solid #daca47; border-radius: 8px; }
+.deck-avname { display: block; font-size: 11px; color: #daca47; font-weight: 700; white-space: nowrap; overflow: hidden; }
+#deck-strip-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+#deck-strip-nav button.active { border-color: #daca47; color: #daca47; }
+#deck-panel h3 { margin-top: 10px; }
+.hero-card { border-color: #daca47; }
+.hero-tag { background: #711b19; color: #e8e4d8; }
+.hero-join.free { color: #8fe08f; font-weight: 700; }
+.hero-join.hire { color: #daca47; font-weight: 700; }
+.keeper-panel .keeper-thumb { width: 64px; height: 64px; }
+/* SHIP AS HOME: tier art — the refit is SEEN, not recolored. Tier 2 gains
+ * a lit work-trim and its prop set; tier 3 gains a framed, warm room with
+ * a fuller prop composition and a dressed door. */
+.deck-props { position: absolute; top: 252px; left: 50%; transform: translateX(-50%); font-size: 17px; letter-spacing: 4px;
+  background: rgba(20,26,32,0.8); border: 1px solid #46525e; border-radius: 8px; padding: 3px 8px; white-space: nowrap; }
+.deck-tier-badge { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700;
+  color: #1d242c; background: #daca47; border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+.deck-station.tier-2 .deck-door { border-color: #8a93a0; box-shadow: inset 0 0 0 2px rgba(218,202,71,0.35), 0 0 14px rgba(218,202,71,0.12); }
+.deck-station.tier-2::before { content: ''; position: absolute; top: 108px; left: 12%; right: 12%; height: 3px;
+  background: linear-gradient(90deg, transparent, #daca47, transparent); opacity: 0.65; }
+.deck-station.tier-3 .deck-door { border-color: #daca47; background: linear-gradient(180deg, #57492a, #33291a);
+  box-shadow: inset 0 0 18px rgba(218,202,71,0.25), 0 0 22px rgba(218,202,71,0.18); }
+.deck-station.tier-3::before { content: ''; position: absolute; top: 104px; left: 6%; right: 6%; height: 5px;
+  background: linear-gradient(90deg, transparent, #daca47, transparent); opacity: 0.9; }
+.deck-station.tier-3::after { content: ''; position: absolute; top: 112px; bottom: 44px; left: 8%; right: 8%;
+  border: 1px solid rgba(218,202,71,0.28); border-bottom: none; border-radius: 12px 12px 0 0; pointer-events: none; }
+.deck-station.tier-room .deck-door { width: 128px; background: linear-gradient(180deg, #3a2f22, #241c12); border-color: #8a6d2f; }
+.deck-trophies { position: absolute; top: 252px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px;
+  background: rgba(20,26,32,0.8); border: 1px solid #8a6d2f; border-radius: 8px; padding: 3px 6px; }
+.tslot-mini { width: 19px; height: 19px; text-align: center; line-height: 19px; font-size: 13px; color: #5c6672;
+  border: 1px dashed #46525e; border-radius: 4px; }
+.tslot-mini.filled { color: #e8e4d8; border: 1px solid #daca47; background: rgba(218,202,71,0.12); }
+.trophy-glyph { font-size: 20px; }
+.trophy-slot.filled { border-color: #daca47; }
+.station-tier { border-color: #8a6d2f; }
+.gsnip { color: #daca47; font-size: 15px; text-shadow: 0 0 6px rgba(218,202,71,0.8); }
+.journal-overlay { position: fixed; inset: 12px; z-index: 60; overflow-y: auto; background: #141a21; border: 2px solid #daca47; }
+.journal-entry { margin: 8px 0; line-height: 1.45; }
+.journal-entry.found { color: #e8e4d8; font-style: italic; }
+.journal-entry.found .muted { font-style: normal; }
+.journal-sil { letter-spacing: 6px; color: #46525e; }
+@media (max-width: 480px) {
+  #deck-viewport { height: 240px; }
+  .deck-station { width: 300px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #deck-strip { transition: none !important; }
+}

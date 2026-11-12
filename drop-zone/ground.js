@@ -125,6 +125,13 @@
         return c.name + ' is ' + c.over + ' kg over their carry bound';
       }).join('; ') + ' — drop something at the Armory.' };
     }
+    // Rule 33 (2026-11-12): the lift refuses an overloaded squad before fuel
+    // is charged — load trades against squad number.
+    var lift = C.dropLift(state, opts.squadIds);
+    if (lift.over > 0) {
+      return { ok: false, reason: 'Too heavy for one drop: ' + lift.count + ' divers load ' + lift.used +
+        ' kg against ' + lift.capacity + ' kg of lift. Take fewer divers, or lighten kit in the Armory.' };
+    }
     state.airship.fuel -= T.dropFuelCost;
     state.totalDrops += 1;
     tile.discovered = true;

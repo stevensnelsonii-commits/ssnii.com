@@ -1502,6 +1502,11 @@
     var t = C.tileAt(state, selected.x, selected.y);
     var body = $('briefing-body');
     if (!t) { body.innerHTML = '<p class="muted">Pick a tile on the Map first.</p>'; return; }
+    // Rule 33: the squad list scrolls inside its panel — keep the player's
+    // scroll position across this rebuild so picking a diver never jumps.
+    var prevDropScroll = 0;
+    var oldDropScroll = body.querySelector('#drop-scroll');
+    if (oldDropScroll) prevDropScroll = oldDropScroll.scrollTop;
     var gate = C.dropGate(state, t.x, t.y);
     var shipHere = gate.ok;
     var tier = t.reconTier || 0;
@@ -1552,6 +1557,7 @@
     var riskWord = sevB.multiplier <= 1 ? 'LOW — calm ground; the fall rarely hurts anyone'
       : sevB.multiplier < 2 ? 'MODERATE — rough weather; expect the dice to bite sometimes'
       : 'HIGH — storm ground; injuries on the way down are likely';
+    var riskWordShort = sevB.multiplier <= 1 ? 'LOW' : sevB.multiplier < 2 ? 'MODERATE' : 'HIGH';
     var weatherHtml = '<br><strong>Descent weather:</strong> storm x' + sevB.multiplier + ' (' + sevB.tier.toUpperCase() + '). ' +
       '<strong>Injury risk: ' + riskWord + '.</strong> <span class="muted">(GRIT save, d20 + GRIT vs 16 — the report shows the rolls.)</span>';
     /* §7/§8: site intel states the Siren mix (and any war machine) in
@@ -1565,7 +1571,41 @@
     var gateLine = shipHere
       ? '<br><b style="color:#8fe08f">Airship overhead — the drop launches from here.</b>'
       : '<br><span class="warn"><b>No drop from here.</b> ' + esc(gate.reason) + ' (The airship is at (' + state.airship.x + ',' + state.airship.y + ').)</span>';
+    /* Rule 33 (2026-11-12): the Drop screen is one screen — the risk and
+       the load are PINNED at the top, the squad panel scrolls under them,
+       and Launch sits in the foot. The old target panel survives whole as
+       "Target details" inside the scroll region. */
+    var heroRideIds = joins.map(function (j) { return j.diverId; }).filter(function (id) { return projIds.indexOf(id) < 0; });
+    var liftNow = C.dropLift(state, projIds.concat(heroRideIds));
+    var blockedOut = avail.some(function (d) { return projIds.indexOf(d.id) < 0 && C.diverDropLoad(state, d) > liftNow.left; });
+    var riskHtml = '<div class="panel drop-risk">' +
+      '<div class="risk-line"><strong>Target (' + t.x + ',' + t.y + ')</strong> — ' + esc(t.terrain) +
+      (t.discovered ? '' : ' <span class="warn">(undiscovered)</span>') +
+      ' · Threat: ' + esc(C.knownThreat(state, t).text) + '/5' +
+      ' · Mission: <strong>' + esc(kind) + '</strong></div>' +
+      '<div class="risk-line"><strong>Descent:</strong> storm x' + sevB.multiplier + ' (' + sevB.tier.toUpperCase() + ') — <strong>injury risk: ' + riskWordShort + '</strong>' +
+      ' · Wind: ' + t.windX + ' E/W · ' + t.windY + ' N/S push</div>' +
+      (intelHtml ? '<div class="risk-line">' + intelHtml.replace(/^<br>/, '') + '</div>' : '') +
+      '<div class="risk-line risk-proj"><strong>Projected:</strong> ' +
+      (proj ? '<span class="proj-' + proj.word + '">' + proj.word.toUpperCase() + '</span> <span class="proj-num">' + proj.expected + '</span>' +
+        '<div class="riskmeter"><span class="rmz rmz-red"></span><span class="rmz rmz-amber"></span><span class="rmz rmz-green"></span>' +
+        '<span class="rm-tick"></span><span class="rm-marker" style="left:' + Math.max(0, Math.min(100, proj.expected)) + '%"></span></div>' +
+        '<div class="rm-ticklabel"><span>70 = success</span></div>'
+            : '<span class="muted">pick a squad</span>') + '</div>' +
+      (shipHere ? '' : '<div class="risk-line"><span class="warn"><b>No drop from here.</b> ' + esc(gate.reason) + ' (The airship is at (' + state.airship.x + ',' + state.airship.y + ').)</span></div>') +
+      (cityLocked ? '<div class="risk-line"><span class="warn"><b>The city is locked</b> — both gate keys are read in Target details below.</span></div>' : '') +
+      '<div class="risk-line muted">Drop cost: ' + C.TUNABLES.dropFuelCost + ' fuel (tank: ' + state.airship.fuel + ')</div>' +
+      '</div>';
+    var loadHtml = '<div class="panel drop-load' + (liftNow.over > 0 ? ' over' : '') + '">' +
+      '<div class="load-head"><span>SQUAD <b>' + projIds.length + '</b>' + (heroRideIds.length ? ' + <b>' + heroRideIds.length + '</b> hero' + (heroRideIds.length > 1 ? 'es' : '') + ' riding' : '') + '</span>' +
+      '<span>LOAD <b>' + liftNow.used + '</b> / ' + liftNow.capacity + ' kg</span>' +
+      '<span>LEFT FOR CARGO <b>' + Math.max(0, liftNow.left) + '</b> kg</span></div>' +
+      '<div class="loadgauge"><div class="loadgauge-fill" style="width:' + Math.min(100, Math.round(liftNow.used / liftNow.capacity * 100)) + '%"></div></div>' +
+      (liftNow.over > 0 ? '<div class="bad">Over the lift by ' + liftNow.over + ' kg — this squad cannot launch. Lighten kit in the Armory step below, or drop a diver.</div>'
+        : (blockedOut ? '<div class="warn">No room for another diver — every diver left outweighs the lift remaining. What is left hauls cargo.</div>' : '')) +
+      '</div>';
     body.innerHTML =
+      '<div class="panel-shell drop-shell"><div class="panel-pin">' + riskHtml + loadHtml + '</div><div class="panel-scroll" id="drop-scroll">' +
       '<details class="panel drop-explainer" data-drop-explainer aria-label="What happens when you drop?">' +
       '<summary>What happens when you drop? — how a drop runs, in 6 steps</summary>' +
       '<ol class="guide-steps">' +
@@ -1578,15 +1618,13 @@
       '</ol>' +
       '<button type="button" class="small" data-open-guide>Open the full Help / Guide</button>' +
       '</details>' +
-      '<div class="panel"><strong>Target (' + t.x + ',' + t.y + ')</strong> — ' + esc(t.terrain) +
+      '<div class="panel"><strong>Target details</strong> — (' + t.x + ',' + t.y + ') ' + esc(t.terrain) +
       (t.discovered ? '' : ' <span class="warn">(undiscovered — landing scored with what you know)</span>') +
-      '<br>Threat: ' + esc(C.knownThreat(state, t).text) + '/5' +
       '<br>Mission: <strong>' + esc(kind) + '</strong>' +
       (kind === 'robot' && t.robotSite ? ' — crack ' + esc(t.robotSite.name) + ': ~' + t.robotSite.scrap + ' SCRAP + ~' + t.robotSite.intel + ' INTEL behind machine guardians. The worst ground in the sector; on a catastrophe, the point diver gets no save.' : '') +
       (kind === 'supply' && t.supplySite ? ' — grab the cache at ' + esc(t.supplySite.name) + ': ~' + t.supplySite.amount + ' ' + esc(t.supplySite.resource) + '. Rich haul, lethal ground.' : '') +
       (t.resourceType ? ' — node ' + esc(t.resourceType) + ' yield ' + t.resourceYield : '') +
-      '<br>Wind: ' + t.windX + ' E/W · ' + t.windY + ' N/S push' +
-      '<br>Drop cost: ' + C.TUNABLES.dropFuelCost + ' fuel (tank: ' + state.airship.fuel + ')' + gateLine + poiHtml + weatherHtml + intelHtml + '</div>' +
+      gateLine + poiHtml + weatherHtml + '</div>' +
       '<h3>Recon (tier ' + tier + ' held)</h3>' +
       '<div>' +
       [1, 2, 3].map(function (n) {
@@ -1605,7 +1643,8 @@
           thumb(d) +
           '<span class="squad-name">' + esc(d.name) + '</span> ' + archBadge(d) +
           '<span class="muted">Lv ' + d.level + (d.traits.length ? ' · ' + esc(d.traits.join(', ')) : '') + '</span>' +
-          '<span class="squad-val">' + C.diverValue(d) + ' pts</span></span>' +
+          '<span class="squad-val">' + C.diverValue(d) + ' pts</span>' +
+          '<span class="squad-load">' + C.diverDropLoad(state, d) + ' kg</span></span>' +
           '<span class="statbars">' + C.STATS.map(function (s) { return statBar(s, d.stats[s]); }).join('') + '</span>' +
           gearHtml(d) +
           '</label>';
@@ -1615,16 +1654,12 @@
       (avail.length ? '<div class="panel pool-panel"><div class="pool-head"><span>DROP POOL</span><span class="pool-num">' + poolNow + ' / ' + poolMax + ' pts</span></div>' +
         '<div class="gauge"><div class="gauge-fill" style="width:' + (poolMax ? Math.round(poolNow / poolMax * 100) : 0) + '%"></div></div></div>' : '') +
       (projIds.length ? '<h3>Armory — kit the picked squad</h3><div id="briefing-armory">' + armoryHtml(projIds) + '</div>' : '') +
-      '<div class="panel">If you skip the ground battle, the old roll projects: ' +
-      (proj ? '<span class="proj-' + proj.word + '">' + proj.word.toUpperCase() + '</span> <span class="proj-num">' + proj.expected + '</span>' +
-        '<div class="riskmeter"><span class="rmz rmz-red"></span><span class="rmz rmz-amber"></span><span class="rmz rmz-green"></span>' +
-        '<span class="rm-tick"></span><span class="rm-marker" style="left:' + Math.max(0, Math.min(100, proj.expected)) + '%"></span></div>' +
-        '<div class="rm-ticklabel"><span>70 = success</span></div>'
-            : '<span class="muted">pick a squad</span>') +
-      '<br><label class="pick"><input type="checkbox" id="chk-skip-battle"' + (skipBattlePref ? ' checked' : '') + '> Skip the ground battle (reduced motion / quick resolve — the drop resolves by the roll above, exactly once)</label></div>' +
+      '</div><div class="panel-foot">' +
+      '<label class="pick skip-pick"><input type="checkbox" id="chk-skip-battle"' + (skipBattlePref ? ' checked' : '') + '> Skip the ground battle (reduced motion / quick resolve — the drop resolves by the roll above, exactly once)</label>' +
       '<div class="action-bar"><button type="button" id="btn-launch" class="primary"' +
       (projIds.length && state.airship.fuel >= C.TUNABLES.dropFuelCost && !cityLocked && shipHere ? '' : ' disabled') + '>' +
-      (shipHere ? 'Launch Drop — ' + C.TUNABLES.dropFuelCost + ' fuel' : 'Drop requires the ship on this tile — move the ship here first') + '</button></div>';
+      (shipHere ? 'Launch Drop — ' + C.TUNABLES.dropFuelCost + ' fuel' : 'Drop requires the ship on this tile — move the ship here first') + '</button></div>' +
+      '</div></div>';
     Array.prototype.forEach.call(body.querySelectorAll('[data-recon]'), function (b) {
       b.addEventListener('click', function () {
         var n = parseInt(b.dataset.recon, 10);
@@ -1640,7 +1675,26 @@
     });
     Array.prototype.forEach.call(body.querySelectorAll('.squad-pick'), function (el) {
       el.addEventListener('change', function () {
-        if (el.checked) sfx.select(); else sfx.deselect();
+        if (el.checked) {
+          // Rule 33: the lift is finite — refuse the pick, in plain words,
+          // when this diver (body + kit, plus any heroes already riding)
+          // would overload the drop.
+          var trialIds = selectedSquad();
+          heroRideIds.forEach(function (id) { if (trialIds.indexOf(id) < 0) trialIds.push(id); });
+          var trialLift = C.dropLift(state, trialIds);
+          if (trialLift.over > 0) {
+            el.checked = false;
+            sfx.denied();
+            var dd = C.diverById(state, el.value);
+            var ddLoad = dd ? C.diverDropLoad(state, dd) : 0;
+            toast('The lift won\'t take ' + (dd ? dd.name : 'another diver') + ': the drop already loads ' +
+              (trialLift.used - ddLoad) + ' kg of ' + trialLift.capacity + ' kg, and they add ' + ddLoad +
+              ' kg (body + kit). Drop someone, or lighten kit in the Armory step.');
+            renderBriefingOnly();
+            return;
+          }
+          sfx.select();
+        } else sfx.deselect();
         renderBriefingOnly();
       });
     });
@@ -1660,6 +1714,14 @@
       if (over.length) {
         sfx.denied();
         toast('Cannot launch: ' + over.map(function (c) { return c.name + ' is ' + c.over + ' kg over their carry bound'; }).join('; ') + ' — fix it in the Armory step.');
+        return;
+      }
+      // Rule 33: the lift check rides at launch too (kit changed in the
+      // Armory after picking can push a legal squad over the top).
+      var liftLaunch = C.dropLift(state, squadIds);
+      if (liftLaunch.over > 0) {
+        sfx.denied();
+        toast('Cannot launch: ' + squadIds.length + ' divers load ' + liftLaunch.used + ' kg, over the ' + liftLaunch.capacity + ' kg lift. Fewer divers, or lighter kit in the Armory step.');
         return;
       }
       pendingHeroJoins = joins.slice();
@@ -1688,6 +1750,8 @@
       }
       fxPrev.exp = ml;
     }
+    var newDropScroll = body.querySelector('#drop-scroll');
+    if (newDropScroll) newDropScroll.scrollTop = prevDropScroll;
   }
   function renderBriefingOnly() { renderHud(); renderBriefing(); }
 
@@ -2935,9 +2999,27 @@
     settlement: renderSettlement, defense: renderDefense, trade: renderTrade,
     training: renderTraining, memorial: renderMemorial, chronicle: renderChronicle
   };
+  /* Rule 33 design law (2026-11-12): every panel presents its primary
+     information on ONE screen — key readout pinned at top, lists scroll
+     internally, the action sits in the foot. The Drop screen is the
+     reference implementation; panels adopt the same shell (.panel-shell /
+     .panel-pin / .panel-scroll / .panel-foot in styles.css). Memorial and
+     Chronicle adopt it here with structure classes only: their title is
+     the pin and their body list is the scroll region. */
+  var SHELL_SCREENS = { briefing: true, memorial: true, chronicle: true };
+  var SHELL_STRUCTURE = { memorial: true, chronicle: true };
   function show(name) {
     currentScreen = name;
     if (name !== 'ship') stopDeckWalk();
+    Object.keys(SHELL_STRUCTURE).forEach(function (k) {
+      var sec = $('screen-' + k);
+      if (sec && !sec.classList.contains('panel-shell')) {
+        sec.classList.add('panel-shell');
+        var b = sec.querySelector('[id$="-body"]');
+        if (b) b.classList.add('panel-scroll');
+      }
+    });
+    document.body.classList.toggle('shell-active', !!SHELL_SCREENS[name]);
     Object.keys(RENDERERS).forEach(function (k) {
       $('screen-' + k).hidden = k !== name;
     });

@@ -183,6 +183,11 @@
     weaponWeights: { ar: 4, saw: 7, shotgun: 4, smg: 3, launcher: 3, spr: 5, bolt: 6, heavy: 7, sidearm: 1, generic: 4 },
     weaponWeightOverrides: { 'AA-12': 5, 'Barrett M82A1': 12, 'M72 LAW': 3, 'FIM-92 Stinger': 7, 'M24 SWS': 6, 'M249 SAW': 7 },
     throwableWeight: 0.5,                        // per carried throwable
+    // --- Rule 33 (2026-11-12): lift — LOAD vs SQUAD NUMBER -----------------
+    diverBodyWeight: 80,                         // kg: the diver + suit, before kit (§13 loadout adds on top)
+    dropLiftCapacity: 500,                       // kg of lift per drop (bodies + kit). What is not spent
+                                                 // on divers is lift left for cargo — the full roster
+                                                 // (8 starters ≈ 744 kg) never fits, by design
     // --- §14: Armory upgrades ------------------------------------------------
     upgradeCosts: [10, 18, 30, 45],              // SCRAP to step +1 / +2 / +3 (+4 = master bench, Armory tier 3)
     maxUpgrade: 3,                               // base cap; the ADVANCED Armory bench raises it to +4
@@ -1114,6 +1119,29 @@
       var w = loadoutWeight(state, d), b = carryBound(d);
       return { id: id, name: d.name, weight: Math.round(w * 2) / 2, bound: b, over: Math.max(0, Math.round((w - b) * 2) / 2) };
     }).filter(Boolean);
+  }
+  // Rule 33 (2026-11-12): what one diver costs the lift — body + the §13 kit
+  // they carry. The drop's lift is finite, so squad size trades against
+  // hauling: every diver aboard is lift that cannot bring cargo back.
+  function diverDropLoad(state, d) {
+    return Math.round((TUNABLES.diverBodyWeight + loadoutWeight(state, d)) * 2) / 2;
+  }
+  function dropLoad(state, diverIds) {
+    var total = 0;
+    (diverIds || []).forEach(function (id) {
+      var d = diverById(state, id);
+      if (d) total += diverDropLoad(state, d);
+    });
+    return Math.round(total * 2) / 2;
+  }
+  function dropLift(state, diverIds) {
+    var used = dropLoad(state, diverIds);
+    return {
+      capacity: TUNABLES.dropLiftCapacity, used: used,
+      left: Math.round((TUNABLES.dropLiftCapacity - used) * 2) / 2,
+      count: (diverIds || []).length,
+      over: Math.max(0, Math.round((used - TUNABLES.dropLiftCapacity) * 2) / 2)
+    };
   }
   function slotFits(slot, weaponName) {
     var wc = weaponClassOf(weaponName);
@@ -2184,6 +2212,13 @@
     ensureCampaign(state);   // campaign layer defaults, even on hand-built states
     for (var i = 0; i < divers.length; i++) {
       if (!diverAvailable(state, divers[i])) return { ok: false, reason: divers[i].name + ' is not available to drop.' };
+    }
+    // Rule 33 (2026-11-12): the lift refuses an overloaded squad, in plain
+    // words, before any fuel moves — numbers trade against hauling.
+    var lift = dropLift(state, opts.diverIds);
+    if (lift.over > 0) {
+      return { ok: false, reason: 'Too heavy for one drop: ' + lift.count + ' divers load ' + lift.used +
+        ' kg against ' + lift.capacity + ' kg of lift. Take fewer divers, or lighten kit in the Armory — every diver aboard is lift that cannot haul cargo.' };
     }
     if (state.airship.fuel < TUNABLES.dropFuelCost) {
       return { ok: false, reason: isGrounded(state)
@@ -3443,7 +3478,7 @@
     armoryAddAttachment: armoryAddAttachment, effectiveWeapon: effectiveWeapon,
     weaponWeightOf: weaponWeightOf, armorOf: armorOf, armorProtection: armorProtection,
     kitThrowsFor: kitThrowsFor, loadoutWeight: loadoutWeight, carryBound: carryBound,
-    loadoutCheck: loadoutCheck, slotFits: slotFits, assignWeapon: assignWeapon, setArmor: setArmor,
+    loadoutCheck: loadoutCheck, diverDropLoad: diverDropLoad, dropLoad: dropLoad, dropLift: dropLift, slotFits: slotFits, assignWeapon: assignWeapon, setArmor: setArmor,
     fitAttachment: fitAttachment, removeAttachment: removeAttachment,
     upgradedProfile: upgradedProfile, upgradeWeapon: upgradeWeapon,
     effectiveProfile: effectiveProfile, gearLineFor: gearLineFor, autoEquip: autoEquip,

@@ -461,6 +461,45 @@ body.shell-active #screen-briefing > h2 { display: none; }
 .squad-load { font-weight: 700; color: #9aa5ae; font-size: 12.5px; white-space: nowrap; }
 .panel-foot .skip-pick { margin: 0 0 6px; }
 .panel-foot .action-bar { position: static; margin-top: 0; padding: 4px 0 0; background: transparent; }
+
+/* Password gate (2026-11-12): shown before any game UI whenever the
+   session has not unlocked (html.dz-locked is set by the inline head
+   script in index.html, before first paint). Everything else on the
+   page is display:none while locked — the game boots underneath and is
+   simply revealed on unlock. */
+#dz-gate { display: none; }
+html.dz-locked #dz-gate {
+  display: flex; position: fixed; inset: 0; z-index: 200;
+  background: #14181d; align-items: center; justify-content: center; padding: 20px;
+}
+html.dz-locked #hud,
+html.dz-locked main,
+html.dz-locked #tabbar,
+html.dz-locked #descent-overlay,
+html.dz-locked #guide-overlay,
+html.dz-locked #first-drop-overlay { display: none !important; }
+.dz-gate-card {
+  width: 100%; max-width: 340px; background: #1d242c;
+  border: 1px solid #38434e; border-top: 4px solid #711b19; border-radius: 12px;
+  padding: 26px 22px 22px; display: flex; flex-direction: column; gap: 10px;
+}
+.dz-gate-title { color: #daca47; letter-spacing: 0.14em; font-size: 30px; font-weight: 800; text-align: center; }
+.dz-gate-sub { margin: 0; text-align: center; color: #9aa5ae; font-size: 14px; line-height: 1.45; }
+.dz-gate-label { font-size: 12px; letter-spacing: 0.09em; color: #9aa5ae; margin-top: 6px; }
+.dz-gate-card input[type="password"] {
+  background: #14181d; color: #e8e4d8; border: 1px solid #4a5866; border-radius: 8px;
+  padding: 12px; font-size: 17px; width: 100%;
+}
+.dz-gate-card input[type="password"]:focus { outline: 2px solid #daca47; outline-offset: 1px; }
+.dz-gate-card button { font-size: 16px; padding: 12px; }
+.dz-gate-msg { margin: 2px 0 0; color: #ff6666; font-size: 14px; text-align: center; }
+@keyframes dz-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+.dz-gate-card.shake { animation: dz-shake 0.45s ease; }
 table.breakdown { border-collapse: collapse; width: 100%; margin: 6px 0; }
 table.breakdown td, table.breakdown th { border: 1px solid #38434e; padding: 4px 7px; text-align: left; font-size: 13px; }
 .lines { white-space: pre-wrap; font-size: 13px; line-height: 1.45; }

@@ -313,6 +313,15 @@ main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
   letter-spacing: 0.14em; color: rgba(232,228,216,0.75); pointer-events: none;
   text-shadow: 0 1px 2px rgba(0,0,0,0.9);
 }
+/* Campaign 1 world map (2026-11-12): the ITC atlas chart inside the
+   charted-world panel — the game's campaign map visual. */
+.campaign-map { margin: 8px 0 10px; }
+.campaign-map img {
+  display: block; width: 100%; height: auto;
+  border: 1px solid #4a5866; border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+.campaign-map figcaption { margin-top: 6px; }
 /* Zoom controls — >=44px touch targets (mobile-first, 2026-11-10). */
 .map-zoom { position: absolute; right: 12px; top: 10px; z-index: 8; display: flex; gap: 4px; align-items: center; }
 .map-zoom button {

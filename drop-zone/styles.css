@@ -236,6 +236,10 @@ main { padding: 6px 10px 16px; max-width: 720px; margin: 0 auto; }
 .cell.rad2 { box-shadow: inset 0 0 8px 4px rgba(224,120,40,0.58); }
 .cell.rad3 { box-shadow: inset 0 0 9px 5px rgba(208,70,40,0.68); }
 .cell.rad4 { box-shadow: inset 0 0 10px 6px rgba(255,42,26,0.78); }
+/* Move reachability (legibility fix): while a destination tile is
+   selected, every tile the airship can still reach this turn wears the
+   same yellow inset ring the ground grid uses for AP reach. */
+.cell.in-range { box-shadow: inset 0 0 0 2px rgba(218,202,71,.55), inset 0 -3px 0 rgba(0,0,0,.28); }
 /* Town street + rubble field dressing (old-world fabric around POIs). */
 .cell.street { background: linear-gradient(165deg, #5a544c, #443e37); }
 .cell.rubble::after {
@@ -641,6 +645,12 @@ label.pick { display: block; padding: 7px 8px; background: #232b33; border-radiu
   border-radius: 6px; padding: 7px 9px; margin: 6px 0; font-size: 13.5px;
 }
 #objective-line strong { color: #daca47; }
+#move-line {
+  background: #25313a; border: 1px solid #4a5866; border-left: 5px solid #daca47;
+  border-radius: 6px; padding: 7px 9px; margin: 6px 0; font-size: 13.5px;
+}
+#move-line strong { color: #daca47; }
+#btn-move.over-range { border-color: #bf4e4e; color: #ff9d8a; }
 #grounded-banner { border-radius: 8px; padding: 9px 10px; margin: 6px 0; font-size: 14px; }
 #grounded-banner.grounded { background: #711b19; border: 1px solid #bf4e4e; }
 #grounded-banner.lowfuel { background: #4d3d0a; border: 1px solid #daca47; }

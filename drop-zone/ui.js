@@ -971,6 +971,12 @@
     });
     var livingByLevel = C.livingDivers(state).slice().sort(function (a, b) { return b.level - a.level; });
     var gateProxy = C.cityGate(state, livingByLevel.slice(0, C.TUNABLES.cityGateHeroes).map(function (d) { return d.id; }));
+    /* Move legibility (Rule 24/33): this turn's remaining airship range,
+       computed once — the pinned #move-line readout, the Move button's
+       honesty label, and the in-range tile ring all read from it.
+       Distance is Manhattan, the same measure core.moveAirship uses. */
+    var moveLeft = C.TUNABLES.moveRangePerTurn - state.airship.movedThisTurn;
+    var moveChoosing = !(selected.x === state.airship.x && selected.y === state.airship.y);
     var html = '';
     state.tiles.forEach(function (t) {
       var pres = tilePresentation(t);
@@ -1000,6 +1006,13 @@
       if (t.x === state.airship.x && t.y === state.airship.y) cls += ' ship';
       if (route[t.x + ',' + t.y]) cls += state.supply.status === 'choked' ? ' choked' : ' route';
       if (t.x === selected.x && t.y === selected.y) cls += ' selected';
+      /* Reachability: while a destination is being chosen (a tile other
+         than the ship's own is selected), ring every tile the ship can
+         still reach this turn — same yellow the ground grid uses. */
+      if (moveChoosing && moveLeft > 0) {
+        var mDist = Math.abs(t.x - state.airship.x) + Math.abs(t.y - state.airship.y);
+        if (mDist > 0 && mDist <= moveLeft) cls += ' in-range';
+      }
       var accessible = pres.name + ' at tile ' + t.x + ',' + t.y + '. ' + pres.detail;
       var poi = t.discovered ? poiByCoord[t.x + ',' + t.y] : null;
       var far = poi ? atlasStyle((poi.building || 'city') + ':far') : null;
@@ -1151,6 +1164,17 @@
       var jb = $('btn-journal-map');
       if (jb) jb.addEventListener('click', function () { toggleJournal(true); });
     }
+    /* The pinned move readout: how much of this turn's movement is left,
+       in plain words, at all times — never learned from a failure toast.
+       renderMap runs on selection, after every move, and on End Turn,
+       so this line is always current. */
+    var ml = $('move-line');
+    if (ml) {
+      ml.innerHTML = '<strong>Move:</strong> ' + moveLeft + ' of ' + C.TUNABLES.moveRangePerTurn + ' left this turn' +
+        (moveLeft <= 0
+          ? ' — End Turn to refresh.'
+          : ' <span class="muted">(moved ' + state.airship.movedThisTurn + ' · 1 fuel per tile)</span>');
+    }
     /* §2: GROUNDED gets a banner and a one-tap fix, not a silent refusal. */
     var gb = $('grounded-banner');
     if (gb) {
@@ -1176,8 +1200,19 @@
     }
     var mv = $('btn-move');
     if (mv) {
-      var md = Math.max(Math.abs(t.x - state.airship.x), Math.abs(t.y - state.airship.y));
-      mv.textContent = 'Move Airship — ' + md + ' tile(s), ' + md + ' fuel';
+      /* Button honesty: price the move the way core.moveAirship does —
+         Manhattan distance, ceil(dist / moveFuelPerTiles) fuel — and
+         when the chosen move exceeds what is left this turn, say so on
+         the button BEFORE the tap. The toast stays as the backstop. */
+      var md = Math.abs(t.x - state.airship.x) + Math.abs(t.y - state.airship.y);
+      var mcost = Math.ceil(md / C.TUNABLES.moveFuelPerTiles);
+      if (md > moveLeft) {
+        mv.textContent = 'Move Airship — needs ' + md + ' tile(s), only ' + moveLeft + ' left this turn';
+        mv.classList.add('over-range');
+      } else {
+        mv.textContent = 'Move Airship — ' + md + ' tile(s), ' + mcost + ' fuel';
+        mv.classList.remove('over-range');
+      }
     }
     drawWorldMap();
   }
